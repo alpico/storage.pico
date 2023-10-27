@@ -13,52 +13,67 @@ impl<'a, T: ReadExt> File<'a, T> {
         let inode = fs.inode(nr).await?;
         Ok(Self { inode, fs })
     }
+
+
+    async fn get_extent<X: Sized + Copy>(&self, ofs: &mut u64) -> Result<X, Error> {
+        let o = *ofs;
+        let res = {
+            if o <= 60 - 12 {
+                Ok(unsafe { *(self.inode.extent().unwrap().as_ptr().add(o as usize) as *const X) })
+            } else  {
+                self.fs.disk.read_object(o).await
+            }
+        };
+        *ofs = o + core::mem::size_of::<X>() as u64;
+        res
+    }
+
     /// Search in the extent tree for the right block.
     ///
     /// Returns the physical block number and the number of continous blocks.
     async fn search_extent(
         &self,
-        mut data: &[u32],
         block: u64,
         block_size: u64,
     ) -> Result<(u64, u64), Error> {
-        let mut buf = Vec::with_capacity(block_size as usize / 4);
-        loop {
-            assert!(data.len() >= 3);
-            let header = unsafe { &*(data.as_ptr() as *const Ext4ExtentHeader) };
+        let mut ofs = 0;
+        for _depth in 0..8 {
+            let mut header: Ext4ExtentHeader = self.get_extent(&mut ofs).await?;
             if header.magic != 0xf30a {
                 return Err(anyhow::anyhow!("not an extend header"));
             }
-
             // do a linear search for now - a binary search would be a bit faster on larger trees
-            for i in 1..(header.entries + 2) {
-                if i > header.entries {
-                    return Err(anyhow::anyhow!("end of extend"));
-                }
-                let entry =
-                    unsafe { &*(data.as_ptr().offset(i as isize * 3) as *const Ext4ExtentLeaf) };
-                if block < entry.block as u64 {
-                    return Err(anyhow::anyhow!("eof"));
-                }
+            while header.entries > 0 {
+                header.entries -= 1;
                 if header.depth == 0 {
+                    let entry: Ext4ExtentLeaf = self.get_extent(&mut ofs).await?;
+                    if block < entry.block as u64 {
+                        return Err(anyhow::anyhow!("eof"));
+                    }
                     let n = block - entry.block as u64;
                     if n < entry.len as u64 {
                         return Ok((entry.dest(), entry.len as u64 - n));
                     }
                 } else {
-                    let entry = unsafe {
-                        &*(data.as_ptr().offset(i as isize * 3) as *const Ext4ExtentIndex)
-                    };
-                    let ofs = entry.dest() * block_size;
-                    self.fs.disk.read_slice(ofs, &mut buf).await?;
-                    data = &buf;
+                    let entry: Ext4ExtentIndex = self.get_extent(&mut ofs).await?; 
+                    if block < entry.block as u64 {
+                        return Err(anyhow::anyhow!("eof"));
+                    }
+                    ofs = entry.dest() * block_size;
                     break;
+                }
+                if header.entries == 0 {
+                    return Err(anyhow::anyhow!("eof"))
                 }
             }
         }
+        Err(anyhow::anyhow!("to deep"))
     }
 
-    pub fn dir(&self, optimization: bool) -> Option<DirIterator<Self, 4096>> {
+    /// Return a iterator if this is a directory.
+    ///
+    /// The optimization drops empty directories that have not been updated yet..
+    pub fn dir(&self, optimization: bool) -> Option<DirIterator<Self>> {
         if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !optimization) {
             return Some(DirIterator::new(self));
         }
@@ -90,8 +105,8 @@ impl<'a, T: ReadExt> Read for File<'a, T> {
         let valid_size = size - offset;
 
         let (phys, max_blocks) = {
-            if let Some(data) = self.inode.extent() {
-                self.search_extent(data, block, self.fs.sb.block_size())
+            if self.inode.extent().is_some() {
+                self.search_extent(block, self.fs.sb.block_size())
                     .await?
             } else {
                 todo!("original blocks");
@@ -110,7 +125,10 @@ impl<'a, T: ReadExt> Read for File<'a, T> {
     }
 }
 
-#[derive(Debug)]
+/// Also provide ReadExt functionality.
+impl<'a, T: ReadExt> ReadExt for File<'a, T> {}
+
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 struct Ext4ExtentHeader {
     magic: u16,
@@ -120,7 +138,7 @@ struct Ext4ExtentHeader {
     _1: u32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 struct Ext4ExtentLeaf {
     block: u32,
@@ -135,7 +153,7 @@ impl Ext4ExtentLeaf {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[repr(C)]
 struct Ext4ExtentIndex {
     block: u32,

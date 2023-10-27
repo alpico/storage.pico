@@ -1,4 +1,5 @@
 //! Read-only access to the ext{2,3,4} filesystems.
+#![no_std]
 
 mod directory;
 mod file;
