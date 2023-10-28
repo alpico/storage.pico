@@ -20,7 +20,8 @@ impl<'a> MemDisk<'a> {
         let mut fd = OpenOptions::new()
             .read(true)
             .custom_flags(if direct { libc::O_DIRECT } else { 0 })
-            .open(filename).map_err(anyhow::Error::msg)?;
+            .open(filename)
+            .map_err(anyhow::Error::msg)?;
 
         let length = fd.seek(SeekFrom::End(0))?;
 
@@ -63,4 +64,3 @@ impl Read for MemDisk<'_> {
         Ok(n)
     }
 }
-

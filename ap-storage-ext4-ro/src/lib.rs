@@ -27,11 +27,12 @@ pub enum FileType {
 pub struct Ext4Fs<'a> {
     disk: &'a (dyn Read + Sync),
     sb: SuperBlock,
+    leaf_optimization: bool,
 }
 
 impl<'a> Ext4Fs<'a> {
     /// Mount the filesystem..
-    pub fn mount(disk: &'a (dyn Read + Sync)) -> Result<Ext4Fs<'a>, Error> {
+    pub fn mount(disk: &'a (dyn Read + Sync), leaf_optimization: bool) -> Result<Ext4Fs<'a>, Error> {
         let sb = read_object::<SuperBlock>(disk, 0x400)?;
 
         // check the magic
@@ -46,7 +47,7 @@ impl<'a> Ext4Fs<'a> {
                 sb.feature_incompat
             ));
         }
-        Ok(Self { disk, sb })
+        Ok(Self { disk, sb, leaf_optimization })
     }
 
     /// Read an inode.

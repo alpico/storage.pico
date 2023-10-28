@@ -10,7 +10,7 @@ pub trait Read {
 }
 
 /// Read a single object.  Repeat partial reads until EOF or error.
-pub fn read_object<'a, T: Sized>(own: &dyn Read, offset: Offset) -> Result<T, Error> {
+pub fn read_object<T: Sized>(own: &dyn Read, offset: Offset) -> Result<T, Error> {
     let mut res = MaybeUninit::uninit();
     let x = unsafe {
         core::slice::from_raw_parts_mut(res.as_mut_ptr() as *mut u8, core::mem::size_of::<T>())

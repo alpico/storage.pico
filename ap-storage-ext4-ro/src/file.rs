@@ -103,11 +103,8 @@ impl<'a> File<'a> {
     }
 
     /// Return a iterator if this is a directory.
-    ///
-    /// The optimization drops empty directories that have not been updated yet..
-    /// XXX this field should be moved into the filesystem object
-    pub fn dir(&self, optimization: bool) -> Option<DirIterator> {
-        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !optimization) {
+    pub fn dir(&self) -> Option<DirIterator> {
+        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.fs.leaf_optimization) {
             return Some(DirIterator::new(self));
         }
         None
