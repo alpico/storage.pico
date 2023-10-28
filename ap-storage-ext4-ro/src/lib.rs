@@ -1,5 +1,7 @@
 //! Read-only access to the ext{2,3,4} filesystems.
 
+#![no_std]
+
 mod directory;
 mod file;
 mod inode;
@@ -21,14 +23,15 @@ pub enum FileType {
     Unknown,
 }
 
+#[derive(Clone)]
 pub struct Ext4Fs<'a> {
-    disk: &'a dyn Read,
+    disk: &'a (dyn Read + Sync),
     sb: SuperBlock,
 }
 
 impl<'a> Ext4Fs<'a> {
     /// Mount the filesystem..
-    pub fn mount(disk: &'a dyn Read) -> Result<Ext4Fs<'a>, Error> {
+    pub fn mount(disk: &'a (dyn Read + Sync)) -> Result<Ext4Fs<'a>, Error> {
         let sb = read_object::<SuperBlock>(disk, 0x400)?;
 
         // check the magic
