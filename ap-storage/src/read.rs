@@ -5,31 +5,26 @@ use core::mem::MaybeUninit;
 
 /// Trait to read from a file or disk from a certain offset.
 pub trait Read {
-    /// Read into some byte buffer.
+    /// Read into some byte buffer. Returning zero means EOF.
     async fn read_bytes(&self, offset: Offset, buf: & mut [u8]) -> Result<usize, Error>;
 
 }
 
 /// Trait extension to simplify reading.
 pub trait ReadExt: Read {
-    /// Read a slice of sized objects.
-    async fn read_slice<T: Sized>(&self, offset: Offset, buf: &mut [T]) -> Result<usize, Error> {
-        let x = unsafe {
-            core::slice::from_raw_parts_mut(buf.as_mut_ptr() as *mut u8, core::mem::size_of_val(buf))
-        };
-        let res = self.read_bytes(offset, x).await?;
-        Ok(res / core::mem::size_of::<T>())
-    }
-
-    /// Read a single object.
+    /// Read a single object.  Repeat partial reads until EOF or error.
     async fn read_object<T: Sized>(&self, offset: Offset) -> Result<T, Error> {
         let mut res = MaybeUninit::uninit();
         let x = unsafe {
             core::slice::from_raw_parts_mut(res.as_mut_ptr() as *mut u8, core::mem::size_of::<T>())
         };
-        let n = self.read_bytes(offset, x).await?;
-        if n != x.len() {
-            return Err(anyhow::anyhow!("partial read"));
+
+        let mut n = 0;
+        while n != x.len() {
+            match self.read_bytes(offset + n as u64, &mut x[n..]).await? {
+                0 => return Err(anyhow::anyhow!("partial read")),
+                c =>  { n +=c },
+            }
         }
         Ok(unsafe { res.assume_init() })
     }
