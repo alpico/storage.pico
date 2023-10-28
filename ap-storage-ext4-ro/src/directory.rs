@@ -4,7 +4,7 @@ use super::{Error, Read, read_object};
 /// A directory iterator.
 pub struct DirIterator<'a> {
     parent: &'a dyn Read,
-    offset: u64,
+    pub offset: u64,
 }
 
 impl<'a> DirIterator<'a> {

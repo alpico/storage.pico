@@ -86,7 +86,7 @@ impl<'a> File<'a> {
                 }
                 let n = block - entry.block as u64;
                 if n < entry.len as u64 {
-                    return Ok((entry.dest(), entry.len as u64 - n));
+                    return Ok((entry.dest() + n, entry.len as u64 - n));
                 }
                 // hole after
                 return Ok((0, 1));
