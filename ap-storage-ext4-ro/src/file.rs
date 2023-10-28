@@ -1,15 +1,15 @@
 //! File support.
 
-use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
+use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, read_object};
 
-pub struct File<'a, T> {
+pub struct File<'a> {
     inode: Inode,
-    fs: &'a Ext4Fs<'a, T>,
+    fs: &'a Ext4Fs<'a>,
 }
 
-impl<'a, T: ReadExt> File<'a, T> {
+impl<'a> File<'a> {
     /// Open the given file by inode number.
-    pub fn new(fs: &'a Ext4Fs<T>, nr: u64) -> Result<Self, Error> {
+    pub fn new(fs: &'a Ext4Fs, nr: u64) -> Result<Self, Error> {
         Ok(Self {
             inode: fs.inode(nr)?,
             fs,
@@ -36,7 +36,7 @@ impl<'a, T: ReadExt> File<'a, T> {
                 *(self.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X)
             }),
             // Could detect errors here
-            _ => self.fs.disk.read_object(ofs),
+            _ => read_object(self.fs.disk, ofs),
         }
     }
 
@@ -106,7 +106,7 @@ impl<'a, T: ReadExt> File<'a, T> {
     ///
     /// The optimization drops empty directories that have not been updated yet..
     /// XXX this field should be moved into the filesystem object
-    pub fn dir(&self, optimization: bool) -> Option<DirIterator<Self>> {
+    pub fn dir(&self, optimization: bool) -> Option<DirIterator> {
         if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !optimization) {
             return Some(DirIterator::new(self));
         }
@@ -114,7 +114,7 @@ impl<'a, T: ReadExt> File<'a, T> {
     }
 }
 
-impl<'a, T: ReadExt> Read for File<'a, T> {
+impl<'a> Read for File<'a> {
     /// Read in the given inode.
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         let size = self.inode.size();
@@ -161,8 +161,6 @@ impl<'a, T: ReadExt> Read for File<'a, T> {
     }
 }
 
-/// Also provide ReadExt functionality.
-impl<'a, T: ReadExt> ReadExt for File<'a, T> {}
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
