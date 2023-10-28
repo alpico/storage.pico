@@ -1,5 +1,4 @@
 //! Read-only access to the ext{2,3,4} filesystems.
-#![no_std]
 
 mod directory;
 mod file;
@@ -11,7 +10,7 @@ pub use file::File;
 pub use inode::Inode;
 pub use superblock::SuperBlock;
 
-use ap_storage::{Error, Read, ReadExt};
+use ap_storage::{Error, Offset, Read, ReadExt};
 
 /// Generic file-types.
 #[derive(Debug, PartialEq, Eq)]
@@ -22,15 +21,15 @@ pub enum FileType {
     Unknown,
 }
 
-pub struct Ext4Fs<T> {
-    disk: T,
+pub struct Ext4Fs<'a, T> {
+    disk: &'a T,
     sb: SuperBlock,
 }
 
-impl<T: ReadExt> Ext4Fs<T> {
+impl<'a, T: ReadExt> Ext4Fs<'a, T> {
     /// Mount the filesystem..
-    pub async fn mount<'a>(disk: T) -> Result<Self, Error> {
-        let sb = disk.read_object::<SuperBlock>(0x400).await?;
+    pub fn mount(disk: &'a T) -> Result<Self, Error> {
+        let sb = disk.read_object::<SuperBlock>(0x400)?;
 
         // check the magic
         if sb.magic != 0xef53 {
@@ -48,7 +47,7 @@ impl<T: ReadExt> Ext4Fs<T> {
     }
 
     /// Read an inode.
-    pub async fn inode(&self, nr: u64) -> Result<Inode, Error> {
+    pub fn inode(&self, nr: u64) -> Result<Inode, Error> {
         if nr > self.sb.inode_count as u64 {
             return Err(anyhow::anyhow!("no such inode"));
         }
@@ -66,15 +65,10 @@ impl<T: ReadExt> Ext4Fs<T> {
 
         // get the inode block from the descriptor table.
         let inode_block = {
-            let lo = self
-                .disk
-                .read_object::<u32>(group_desc_offset + 0x8)
-                .await?;
+            let lo = self.disk.read_object::<u32>(group_desc_offset + 0x8)?;
             let hi = {
                 if self.sb.desc_size() >= 64 {
-                    self.disk
-                        .read_object::<u32>(group_desc_offset + 0x28)
-                        .await?
+                    self.disk.read_object::<u32>(group_desc_offset + 0x28)?
                 } else {
                     0
                 }
@@ -84,11 +78,10 @@ impl<T: ReadExt> Ext4Fs<T> {
 
         self.disk
             .read_object(inode_block * self.sb.block_size() + inode_ofs)
-            .await
     }
 
     /// Return the root directory
-    pub async fn root(&self) -> Result<File<T>, Error> {
-        File::new(self, 2).await
+    pub fn root(&self) -> Result<File<T>, Error> {
+        File::new(self, 2)
     }
 }

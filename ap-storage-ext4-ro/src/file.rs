@@ -1,45 +1,60 @@
 //! File support.
 
-use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Read, ReadExt};
+use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
 
 pub struct File<'a, T> {
     inode: Inode,
-    fs: &'a Ext4Fs<T>,
+    fs: &'a Ext4Fs<'a, T>,
 }
 
 impl<'a, T: ReadExt> File<'a, T> {
     /// Open the given file by inode number.
-    pub async fn new(fs: &'a Ext4Fs<T>, nr: u64) -> Result<Self, Error> {
-        Ok(Self { inode: fs.inode(nr).await?, fs })
+    pub fn new(fs: &'a Ext4Fs<T>, nr: u64) -> Result<Self, Error> {
+        Ok(Self {
+            inode: fs.inode(nr)?,
+            fs,
+        })
+    }
+
+    /// Open from this file.
+    pub fn open(&self, nr: u64) -> Result<Self, Error> {
+        Ok(Self {
+            inode: self.fs.inode(nr)?,
+            fs: self.fs,
+        })
+    }
+
+    pub fn size(&self) -> u64 {
+        self.inode.size()
     }
 
     /// Get an extent object at the certain disk offset.
-    async fn get_extent<X: Sized + Copy>(&self, ofs: u64) -> Result<X, Error> {
+    fn get_extent<X: Sized + Copy>(&self, ofs: u64) -> Result<X, Error> {
         match ofs {
             // The first extents are inline in the block.
-            0..=48 =>
-                Ok(unsafe { *(self.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X) }),
+            0..=48 => Ok(unsafe {
+                *(self.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X)
+            }),
             // Could detect errors here
-            _ =>  self.fs.disk.read_object(ofs).await
+            _ => self.fs.disk.read_object(ofs),
         }
     }
 
     /// Do a binary search for a block in the extend tree.
-    async fn search_binary(&self, block: u64, ofs: u64, count: usize) -> Result<u64, Error> {
+    fn search_binary(&self, block: u64, ofs: u64, count: usize) -> Result<u64, Error> {
         let mut left = 0;
-        let mut right = count;
+        let mut right = count - 1;
 
         while left < right {
-            let middle = (left + right) / 2;
-            let start = self.get_extent::<u32>(ofs + middle as u64 * 12).await? as u64;
+            let middle = (left + right + 1) / 2;
+            let start = self.get_extent::<u32>(ofs + middle as u64 * 12)? as u64;
             if start <= block {
                 left = middle;
                 if start == block {
                     break;
                 }
-            }
-            else {
-                right = middle;
+            } else {
+                right = middle - 1;
             }
         }
         Ok(ofs + left as u64 * 12)
@@ -49,16 +64,12 @@ impl<'a, T: ReadExt> File<'a, T> {
     ///
     /// Returns the physical block number and the number of continous blocks.
     /// A zero block number means a hole in the file.
-    async fn search_extent(
-        &self,
-        block: u64,
-        block_size: u64,
-    ) -> Result<(u64, u64), Error> {
+    fn search_extent(&self, block: u64, block_size: u64) -> Result<(u64, u64), Error> {
         let mut ofs = 0;
         let mut depth = 0;
-        
+
         loop {
-            let header: Ext4ExtentHeader = self.get_extent(ofs).await?;
+            let header: Ext4ExtentHeader = self.get_extent(ofs)?;
             if header.magic != 0xf30a {
                 return Err(anyhow::anyhow!("extent magic"));
             }
@@ -66,8 +77,8 @@ impl<'a, T: ReadExt> File<'a, T> {
                 return Err(anyhow::anyhow!("extent depth"));
             }
             if header.depth == 0 {
-                ofs = self.search_binary(block, ofs + 12, header.entries as usize).await?;
-                let entry: Ext4ExtentLeaf = self.get_extent(ofs).await?;
+                ofs = self.search_binary(block, ofs + 12, header.entries as usize)?;
+                let entry: Ext4ExtentLeaf = self.get_extent(ofs)?;
                 if entry.block as u64 > block {
                     // hole before
                     let n = entry.block as u64 - block;
@@ -75,14 +86,14 @@ impl<'a, T: ReadExt> File<'a, T> {
                 }
                 let n = block - entry.block as u64;
                 if n < entry.len as u64 {
-                    return Ok((entry.dest(), entry.len as u64 - n));                    
+                    return Ok((entry.dest(), entry.len as u64 - n));
                 }
                 // hole after
                 return Ok((0, 1));
             }
             depth = header.depth;
-            ofs = self.search_binary(block, ofs + 12, header.entries as usize).await?;
-            let entry: Ext4ExtentIndex = self.get_extent(ofs).await?; 
+            ofs = self.search_binary(block, ofs + 12, header.entries as usize)?;
+            let entry: Ext4ExtentIndex = self.get_extent(ofs)?;
             if entry.block as u64 > block {
                 let n = entry.block as u64 - block;
                 return Ok((0, n));
@@ -105,7 +116,7 @@ impl<'a, T: ReadExt> File<'a, T> {
 
 impl<'a, T: ReadExt> Read for File<'a, T> {
     /// Read in the given inode.
-    async fn read_bytes(&self, offset: u64, buf: &mut [u8]) -> Result<usize, Error> {
+    fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         let size = self.inode.size();
 
         // check for eof
@@ -117,7 +128,10 @@ impl<'a, T: ReadExt> Read for File<'a, T> {
         // small symlinks are stored inline
         if self.inode.ftype() == FileType::SymLink && size <= 60 {
             buf[..valid_size].copy_from_slice(unsafe {
-                core::slice::from_raw_parts((self.inode.blocks.as_ptr()  as *const u8).add(offset as usize), valid_size)
+                core::slice::from_raw_parts(
+                    (self.inode.blocks.as_ptr() as *const u8).add(offset as usize),
+                    valid_size,
+                )
             });
             return Ok(valid_size);
         }
@@ -127,8 +141,7 @@ impl<'a, T: ReadExt> Read for File<'a, T> {
 
         let (phys, max_blocks) = {
             if self.inode.extent().is_some() {
-                self.search_extent(block_in_file, self.fs.sb.block_size())
-                    .await?
+                self.search_extent(block_in_file, self.fs.sb.block_size())?
             } else {
                 todo!("original blocks");
             }
@@ -141,10 +154,10 @@ impl<'a, T: ReadExt> Read for File<'a, T> {
         let buf = &mut buf[..valid_size];
         if phys == 0 {
             buf.fill(0);
-            return Ok(valid_size)
+            return Ok(valid_size);
         }
         let ofs = phys * self.fs.sb.block_size() + offset_in_block;
-        self.fs.disk.read_bytes(ofs, buf).await
+        self.fs.disk.read_bytes(ofs, buf)
     }
 }
 

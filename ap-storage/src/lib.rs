@@ -1,6 +1,5 @@
 //! The alpico storage interfaces.
 #![allow(async_fn_in_trait)]
-#![no_std]
 
 /// Offset in the underlying storage.
 pub type Offset = u64;
