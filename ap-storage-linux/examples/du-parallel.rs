@@ -6,6 +6,7 @@ use ap_storage_ext4_ro::{Ext4Fs, File};
 use ap_storage_linux::memdisk::MemDisk;
 use clap::Parser;
 
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
@@ -74,7 +75,6 @@ fn main() -> Result<(), Error> {
     // XXX we don't handle the lifetimes correctly
     let x: &dyn ap_storage::Read = &disk;
     let fs = Ext4Fs::mount(unsafe { std::mem::transmute(x) }, args.leaf_optimization)?;
-    //let fs = Ext4Fs::mount(&disk, args.leaf_optimzation)?;
 
     let config = PoolOptions::default()
         .one_is_zero()
@@ -82,28 +82,30 @@ fn main() -> Result<(), Error> {
         .threads(args.threads)
         .slots(args.slots);
 
-    // a function to produce the state for every worker
-    let make_state = |_| WorkerState {
-        fs: fs.clone(),
-        size: 0,
-        count: 0,
-    };
+    for _i in 0..args.repeat {
+        // a function to produce the state for every worker
+        let make_state = |_| WorkerState {
+            fs: fs.clone(),
+            size: 0,
+            count: 0,
+        };
 
-    let state = execute(
-        config,
-        make_state,
-        |sender| {
-            let mut state = make_state(0);
-            visit(sender, 2, &mut state);
-            state
-        },
-        |mut state, x| {
-            state.count += x.count;
-            state.size += x.size;
-            state
-        },
-    );
+        let state = execute(
+            config.clone(),
+            make_state,
+            |sender| {
+                let mut state = make_state(0);
+                visit(sender, 2, &mut state);
+                state
+            },
+            |mut state, x| {
+                state.count += x.count;
+                state.size += x.size;
+                state
+            },
+        );
+        println!("{} {} {}", args.file, state.count, state.size);
+    }
 
-    println!("{} {} {}", args.file, state.count, state.size);
     Ok(())
 }
