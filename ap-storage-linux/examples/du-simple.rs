@@ -21,7 +21,7 @@ struct Args {
     leaf_optimization: bool,
 }
 
-fn visit(dir: &File<'_>) -> Result<(usize, u64), Error> {
+fn visit(dir: &File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
     let Some(mut iter) = dir.dir() else {
         return Ok((0, 0));
     };
@@ -35,10 +35,10 @@ fn visit(dir: &File<'_>) -> Result<(usize, u64), Error> {
             continue;
         }
         count += 1;
-        let child = dir.open(entry.inode())?;
+        let child = File::new(fs, entry.inode())?;
         size += child.size();
         if entry.is_dir() {
-            let (x, y) = visit(&child)?;
+            let (x, y) = visit(&child, fs)?;
             count += x;
             size += y;
         }
@@ -51,7 +51,7 @@ fn main() -> Result<(), Error> {
     let disk = MemDisk::new(&args.file, !args.no_direct)?;
     let fs = Ext4Fs::mount(&disk, args.leaf_optimization)?;
     let dir = fs.root()?;
-    let (count, size) = visit(&dir)?;
+    let (count, size) = visit(&dir, &fs)?;
     println!("{} {} {}", args.file, count, size);
     Ok(())
 }

@@ -1,5 +1,5 @@
 //! Directory iterator.
-use super::{Error, Read, read_object};
+use super::{Error, Read, ReadExt};
 
 /// A directory iterator.
 pub struct DirIterator<'a> {
@@ -15,7 +15,7 @@ impl<'a> DirIterator<'a> {
     pub fn next(&mut self, name: &mut [u8; 255]) -> Result<DirEntryHeader, Error> {
         const O: usize = core::mem::size_of::<DirEntryHeader>();
 
-        let header: DirEntryHeader = read_object(self.parent, self.offset)?;
+        let header: DirEntryHeader = self.parent.read_object(self.offset)?;
         let name_len = header.name_len as usize;
 
         let n = self

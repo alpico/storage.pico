@@ -12,7 +12,7 @@ pub use file::File;
 pub use inode::Inode;
 pub use superblock::SuperBlock;
 
-use ap_storage::{Error, Offset, Read, read_object};
+use ap_storage::{Error, Offset, Read, ReadExt};
 
 /// Generic file-types.
 #[derive(Debug, PartialEq, Eq)]
@@ -25,15 +25,15 @@ pub enum FileType {
 
 #[derive(Clone)]
 pub struct Ext4Fs<'a> {
-    disk: &'a (dyn Read + Sync),
+    disk: &'a dyn Read,
     sb: SuperBlock,
     leaf_optimization: bool,
 }
 
 impl<'a> Ext4Fs<'a> {
     /// Mount the filesystem..
-    pub fn mount(disk: &'a (dyn Read + Sync), leaf_optimization: bool) -> Result<Ext4Fs<'a>, Error> {
-        let sb = read_object::<SuperBlock>(disk, 0x400)?;
+    pub fn mount(disk: &'a dyn Read, leaf_optimization: bool) -> Result<Ext4Fs<'a>, Error> {
+        let sb = disk.read_object::<SuperBlock>(0x400)?;
 
         // check the magic
         if sb.magic != 0xef53 {
@@ -69,10 +69,10 @@ impl<'a> Ext4Fs<'a> {
 
         // get the inode block from the descriptor table.
         let inode_block = {
-            let lo = read_object::<u32>(self.disk, group_desc_offset + 0x8)?;
+            let lo = self.disk.read_object::<u32>(group_desc_offset + 0x8)?;
             let hi = {
                 if self.sb.desc_size() >= 64 {
-                    read_object::<u32>(self.disk, group_desc_offset + 0x28)?
+                    self.disk.read_object::<u32>(group_desc_offset + 0x28)?
                 } else {
                     0
                 }
@@ -81,7 +81,7 @@ impl<'a> Ext4Fs<'a> {
         };
 
         
-        read_object(self.disk, inode_block * self.sb.block_size() + inode_ofs)
+        self.disk.read_object(inode_block * self.sb.block_size() + inode_ofs)
     }
 
     /// Return the root directory

@@ -54,7 +54,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
         }
         worker.count += 1;
 
-        let Ok(child) = dir.open(entry.inode()) else {
+        let Ok(child) = File::new(&fs, entry.inode()) else {
             continue;
         };
         worker.size += child.size();
@@ -72,10 +72,10 @@ fn main() -> Result<(), Error> {
     let args = Args::parse();
     let disk = MemDisk::new(&args.file, !args.no_direct)?;
 
-    // XXX we don't handle the lifetimes correctly
+    // // XXX we don't handle the lifetimes correctly
     let x: &dyn ap_storage::Read = &disk;
-    let fs = Ext4Fs::mount(unsafe { std::mem::transmute(x) }, args.leaf_optimization)?;
-
+     let fs = Ext4Fs::mount(unsafe { std::mem::transmute(x) }, args.leaf_optimization)?;
+    //let fs = Ext4Fs::mount(&disk, args.leaf_optimization)?;
     let config = PoolOptions::default()
         .one_is_zero()
         .io_bound()

@@ -1,26 +1,22 @@
 //! File support.
 
-use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, read_object};
+use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
 
 pub struct File<'a> {
+    block_size: u64,
+    disk: &'a dyn Read,
     inode: Inode,
-    fs: &'a Ext4Fs<'a>,
+    leaf_optimization: bool,
 }
 
 impl<'a> File<'a> {
     /// Open the given file by inode number.
     pub fn new(fs: &'a Ext4Fs, nr: u64) -> Result<Self, Error> {
         Ok(Self {
+            block_size: fs.sb.block_size(),
+            disk: fs.disk,
             inode: fs.inode(nr)?,
-            fs,
-        })
-    }
-
-    /// Open from this file.
-    pub fn open(&self, nr: u64) -> Result<Self, Error> {
-        Ok(Self {
-            inode: self.fs.inode(nr)?,
-            fs: self.fs,
+            leaf_optimization: fs.leaf_optimization,
         })
     }
 
@@ -36,7 +32,7 @@ impl<'a> File<'a> {
                 *(self.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X)
             }),
             // Could detect errors here
-            _ => read_object(self.fs.disk, ofs),
+            _ => self.disk.read_object(ofs),
         }
     }
 
@@ -104,7 +100,7 @@ impl<'a> File<'a> {
 
     /// Return a iterator if this is a directory.
     pub fn dir(&self) -> Option<DirIterator> {
-        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.fs.leaf_optimization) {
+        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.leaf_optimization) {
             return Some(DirIterator::new(self));
         }
         None
@@ -133,12 +129,12 @@ impl<'a> Read for File<'a> {
             return Ok(valid_size);
         }
 
-        let block_in_file = offset / self.fs.sb.block_size();
-        let offset_in_block = offset % self.fs.sb.block_size();
+        let block_in_file = offset / self.block_size;
+        let offset_in_block = offset % self.block_size;
 
         let (phys, max_blocks) = {
             if self.inode.extent().is_some() {
-                self.search_extent(block_in_file, self.fs.sb.block_size())?
+                self.search_extent(block_in_file, self.block_size)?
             } else {
                 todo!("original blocks");
             }
@@ -146,15 +142,15 @@ impl<'a> Read for File<'a> {
 
         let valid_size = core::cmp::min(
             valid_size as u64,
-            max_blocks * self.fs.sb.block_size() - offset_in_block,
+            max_blocks * self.block_size - offset_in_block,
         ) as usize;
         let buf = &mut buf[..valid_size];
         if phys == 0 {
             buf.fill(0);
             return Ok(valid_size);
         }
-        let ofs = phys * self.fs.sb.block_size() + offset_in_block;
-        self.fs.disk.read_bytes(ofs, buf)
+        let ofs = phys * self.block_size + offset_in_block;
+        self.disk.read_bytes(ofs, buf)
     }
 }
 
