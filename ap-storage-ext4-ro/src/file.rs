@@ -100,7 +100,9 @@ impl<'a> File<'a> {
 
     /// Return a iterator if this is a directory.
     pub fn dir(&self) -> Option<DirIterator> {
-        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.leaf_optimization) {
+        if self.inode.ftype() == FileType::Directory
+            && (self.inode.version != 1 || !self.leaf_optimization)
+        {
             return Some(DirIterator::new(self));
         }
         None
@@ -153,7 +155,6 @@ impl<'a> Read for File<'a> {
         self.disk.read_bytes(ofs, buf)
     }
 }
-
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]

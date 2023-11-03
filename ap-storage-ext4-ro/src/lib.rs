@@ -32,7 +32,7 @@ pub struct Ext4Fs<'a> {
 
 impl<'a> Ext4Fs<'a> {
     /// Mount the filesystem..
-    pub fn mount(disk: &'a dyn Read, leaf_optimization: bool) -> Result<Ext4Fs<'a>, Error> {
+    pub fn new(disk: &'a dyn Read, leaf_optimization: bool) -> Result<Ext4Fs<'a>, Error> {
         let sb = disk.read_object::<SuperBlock>(0x400)?;
 
         // check the magic
@@ -47,7 +47,11 @@ impl<'a> Ext4Fs<'a> {
                 sb.feature_incompat
             ));
         }
-        Ok(Self { disk, sb, leaf_optimization })
+        Ok(Self {
+            disk,
+            sb,
+            leaf_optimization,
+        })
     }
 
     /// Read an inode.
@@ -80,8 +84,8 @@ impl<'a> Ext4Fs<'a> {
             ((hi as u64) << 32) | lo as u64
         };
 
-        
-        self.disk.read_object(inode_block * self.sb.block_size() + inode_ofs)
+        self.disk
+            .read_object(inode_block * self.sb.block_size() + inode_ofs)
     }
 
     /// Return the root directory

@@ -1,8 +1,9 @@
 //! Disk usage for an ext4 filesystem.
 
+use al_mmap::Mmap;
 use ap_storage::Error;
 use ap_storage_ext4_ro::{Ext4Fs, File};
-use ap_storage_linux::memdisk::MemDisk;
+use ap_storage_memory::ReadSlice;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -48,8 +49,9 @@ fn visit(dir: &File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
 
 fn main() -> Result<(), Error> {
     let args = Args::parse();
-    let disk = MemDisk::new(&args.file, !args.no_direct)?;
-    let fs = Ext4Fs::mount(&disk, args.leaf_optimization)?;
+    let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
+    let disk = ReadSlice(mmap.0);
+    let fs = Ext4Fs::new(&disk, args.leaf_optimization)?;
     let dir = fs.root()?;
     let (count, size) = visit(&dir, &fs)?;
     println!("{} {} {}", args.file, count, size);

@@ -1,11 +1,11 @@
 //! Disk usage for an ext4 filesystem.
 
-use al_crunch_pool::{execute, PoolOptions, Sender};
+use al_crunch_pool::{execute, Options, Sender};
+use al_mmap::Mmap;
 use ap_storage::Error;
 use ap_storage_ext4_ro::{Ext4Fs, File};
-use ap_storage_linux::memdisk::MemDisk;
+use ap_storage_memory::ReadSlice;
 use clap::Parser;
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -70,42 +70,44 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
 
 fn main() -> Result<(), Error> {
     let args = Args::parse();
-    let disk = MemDisk::new(&args.file, !args.no_direct)?;
+    let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
+    let disk = ReadSlice(mmap.0);
+    let disk: &(dyn ap_storage::Read + Sync) = &disk;
 
-    // // XXX we don't handle the lifetimes correctly
-    let x: &dyn ap_storage::Read = &disk;
-     let fs = Ext4Fs::mount(unsafe { std::mem::transmute(x) }, args.leaf_optimization)?;
-    //let fs = Ext4Fs::mount(&disk, args.leaf_optimization)?;
-    let config = PoolOptions::default()
+    let options = Options::default()
         .one_is_zero()
         .io_bound()
         .threads(args.threads)
         .slots(args.slots);
 
-    for _i in 0..args.repeat {
-        // a function to produce the state for every worker
-        let make_state = |_| WorkerState {
-            fs: fs.clone(),
+    // a function to produce the state for every worker
+    let make_state = |_| {
+        WorkerState {
+            // XXX we don't handle the lifetimes correctly
+            fs: Ext4Fs::new(unsafe { std::mem::transmute(disk) }, args.leaf_optimization).unwrap(),
             size: 0,
             count: 0,
-        };
+        }
+    };
 
+    // the bounded Job queue
+    for _i in 0..args.repeat {
         let state = execute(
-            config.clone(),
+            options.clone(),
             make_state,
+            |state| (state.count, state.size),
             |sender| {
                 let mut state = make_state(0);
                 visit(sender, 2, &mut state);
-                state
+                (state.count, state.size)
             },
-            |mut state, x| {
-                state.count += x.count;
-                state.size += x.size;
-                state
+            |mut x, y| {
+                x.0 += y.0;
+                x.1 += y.1;
+                x
             },
         );
-        println!("{} {} {}", args.file, state.count, state.size);
+        println!("{} {} {}", args.file, state.0, state.1);
     }
-
     Ok(())
 }

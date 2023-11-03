@@ -1,13 +1,11 @@
 //! Traits for writing.
-use crate::{Offset, Error};
-
+use crate::{Error, Offset};
 
 /// Trait to write to a file or disk at a certain offset.
 pub trait Write<'a> {
     /// Write some byte buffer.
     fn write_bytes(&'a self, offset: Offset, buf: &'a [u8]) -> Result<usize, Error>;
 }
-
 
 /// Trait extension to simplify writing.
 pub trait WriteExt<'a>: Write<'a> {

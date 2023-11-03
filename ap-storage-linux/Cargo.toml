@@ -13,5 +13,7 @@ libc = "0.2.149"
 [dev-dependencies]
 clap = { version = "4.4.7", features = ["derive"] }
 ap-storage-ext4-ro = { path="../ap-storage-ext4-ro" }
+ap-storage-memory = { path="../ap-storage-memory" }
 al-crunch-pool = { path="../../linux.pico/al-crunch-pool" }
 #al-crunch-pool = {git = "https://github.com/alpico/linux.pico.git" }
+al-mmap = { path="../../linux.pico/al-mmap" }
