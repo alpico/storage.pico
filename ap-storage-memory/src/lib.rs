@@ -5,6 +5,7 @@ use ap_storage::{Error, Offset, Read};
 use core::cell::RefCell;
 
 mod cache;
+mod inline;
 mod slice;
 pub use slice::*;
 
@@ -19,6 +20,21 @@ impl<'a> MemoryCache<'a> {
 }
 
 impl Read for MemoryCache<'_> {
+    fn read_bytes(&self, ofs: Offset, buf: &mut [u8]) -> Result<usize, Error> {
+        self.0.borrow_mut().read_mut(ofs, buf)
+    }
+}
+
+/// A memory cache.
+pub struct InlineCache<'a, const N: usize>(RefCell<inline::InlineCacheImpl<'a, N>>);
+
+impl<'a, const N: usize> InlineCache<'a, N> {
+    pub fn new(parent: &'a dyn Read) -> Self {
+        Self(RefCell::new(inline::InlineCacheImpl::new(parent)))
+    }
+}
+
+impl<const N: usize> Read for InlineCache<'_, N> {
     fn read_bytes(&self, ofs: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         self.0.borrow_mut().read_mut(ofs, buf)
     }

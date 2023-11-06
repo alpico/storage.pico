@@ -118,7 +118,7 @@ impl<'a> Read for File<'a> {
         if offset >= size {
             return Ok(0);
         }
-        let valid_size = core::cmp::min(size - offset, buf.len() as u64) as usize;
+        let valid_size = core::cmp::min(size - offset, buf.len() as Offset) as usize;
 
         // small symlinks are stored inline
         if self.inode.ftype() == FileType::SymLink && size <= 60 {
@@ -143,7 +143,7 @@ impl<'a> Read for File<'a> {
         };
 
         let valid_size = core::cmp::min(
-            valid_size as u64,
+            valid_size as Offset,
             max_blocks * self.block_size - offset_in_block,
         ) as usize;
         let buf = &mut buf[..valid_size];

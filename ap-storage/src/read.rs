@@ -21,7 +21,7 @@ impl ReadExt for &dyn Read {
     fn read_exact(&self, offset: Offset, buf: &mut [u8]) -> Result<(), Error> {
         let mut n = 0;
         while n != buf.len() {
-            match self.read_bytes(offset + n as u64, &mut buf[n..])? {
+            match self.read_bytes(offset + n as Offset, &mut buf[n..])? {
                 0 => return Err(anyhow::anyhow!("partial read")),
                 c => n += c,
             }

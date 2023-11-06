@@ -7,9 +7,9 @@ The alpico storage stack.
 - [] vfat driver
 - [] metadata per file
 - [] stablize file abstraction
-- [] in-memory cache
+- [x] in-memory cache
 - [] common tools
-   - [] du
+   - [x] du
    - [] find
    - [] cat
  

@@ -1,4 +1,4 @@
-use ap_storage::{Error, Read};
+use ap_storage::{Error, Offset, Read};
 
 /// TODO: LRU linked list, Multiple CacheSets
 pub struct MemoryCacheImpl<'a> {
@@ -38,9 +38,9 @@ impl<'a> MemoryCacheImpl<'a> {
         }
     }
 
-    pub fn read_mut(&mut self, ofs: u64, buf: &mut [u8]) -> Result<usize, Error> {
-        let page_offset = ofs / Self::PAGE_SIZE as u64;
-        let in_page = (ofs % Self::PAGE_SIZE as u64) as usize;
+    pub fn read_mut(&mut self, ofs: Offset, buf: &mut [u8]) -> Result<usize, Error> {
+        let page_offset = ofs / Self::PAGE_SIZE as Offset;
+        let in_page = (ofs % Self::PAGE_SIZE as Offset) as usize;
         let maxn = core::cmp::min(Self::PAGE_SIZE - in_page, buf.len());
         let pages = self.meta.len();
 
@@ -66,7 +66,7 @@ impl<'a> MemoryCacheImpl<'a> {
         while n != Self::PAGE_SIZE {
             let c = self
                 .parent
-                .read_bytes(ofs - (in_page + n) as u64, &mut our[n..])?;
+                .read_bytes(ofs - (in_page + n) as Offset, &mut our[n..])?;
             if c == 0 {
                 break;
             }
@@ -85,5 +85,5 @@ impl<'a> MemoryCacheImpl<'a> {
 #[repr(C)]
 struct Metadata {
     /// The page offset.
-    page_offset: u64,
+    page_offset: Offset,
 }
