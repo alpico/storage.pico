@@ -1,8 +1,9 @@
 //! Disk usage for an ext4 filesystem.
 
 use al_mmap::Mmap;
-use ap_storage::Error;
+use ap_storage::{Error, Read};
 use ap_storage_ext4_ro::{Ext4Fs, File};
+use ap_storage_linux::LinuxDisk;
 use ap_storage_memory::ReadSlice;
 use clap::Parser;
 
@@ -16,6 +17,10 @@ struct Args {
     /// Direct acccess.
     #[arg(short, long, default_value_t = false)]
     no_direct: bool,
+
+    /// Issue pread requests instead of memory mapping the whole file.
+    #[arg(short, long, default_value_t = false)]
+    pread: bool,
 
     /// Leaf optimization
     #[arg(short, long, default_value_t = false)]
@@ -49,9 +54,12 @@ fn visit(dir: &File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
 
 fn main() -> Result<(), Error> {
     let args = Args::parse();
+    let disk_pread = LinuxDisk::new(&args.file);
     let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
-    let disk = ReadSlice(mmap.0);
-    let fs = Ext4Fs::new(&disk, args.leaf_optimization)?;
+    let disk_mmap = ReadSlice(mmap.0);
+    let disk: &dyn Read = if args.pread { &disk_pread } else { &disk_mmap };
+
+    let fs = Ext4Fs::new(disk, args.leaf_optimization)?;
     let dir = fs.root()?;
     let (count, size) = visit(&dir, &fs)?;
     println!("{} {} {}", args.file, count, size);

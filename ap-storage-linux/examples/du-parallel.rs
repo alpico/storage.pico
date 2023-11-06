@@ -6,6 +6,7 @@ use ap_storage::Error;
 use ap_storage_ext4_ro::{Ext4Fs, File};
 use ap_storage_memory::ReadSlice;
 use clap::Parser;
+use std::rc::Rc;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -36,13 +37,13 @@ struct Args {
 }
 
 pub struct WorkerState {
-    fs: Ext4Fs<'static>,
+    fs: Rc<Ext4Fs<'static>>,
     size: u64,
     count: usize,
 }
 
 fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
-    let fs = worker.fs.clone();
+    let fs = Rc::clone(&worker.fs);
     let dir = File::new(&fs, nr).unwrap();
     let Some(mut iter) = dir.dir() else { return };
 
@@ -84,7 +85,9 @@ fn main() -> Result<(), Error> {
     let make_state = |_| {
         WorkerState {
             // XXX we don't handle the lifetimes correctly
-            fs: Ext4Fs::new(unsafe { std::mem::transmute(disk) }, args.leaf_optimization).unwrap(),
+            fs: Rc::new(
+                Ext4Fs::new(unsafe { std::mem::transmute(disk) }, args.leaf_optimization).unwrap(),
+            ),
             size: 0,
             count: 0,
         }
