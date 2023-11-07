@@ -5,34 +5,32 @@ use al_mmap::Mmap;
 use ap_storage::{Error, directory::Iterator, file::FileType};
 use ap_storage_ext4_ro::{Ext4Fs, File};
 use ap_storage_memory::ReadSlice;
-use clap::Parser;
 use std::rc::Rc;
+use gumdrop::Options as GumdropOptions;
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[derive(Debug, GumdropOptions)]
 struct Args {
+    /// Display help.
+    help: bool,
+    
     /// File to benchmark.
-    #[arg(short, long)]
     file: String,
 
     /// Direct acccess.
-    #[arg(short, long, default_value_t = false)]
     no_direct: bool,
 
     /// Leaf optimization
-    #[arg(short, long, default_value_t = false)]
     leaf_optimization: bool,
 
     /// Number of parallel threads.
-    #[arg(short, long)]
     threads: Option<usize>,
 
     /// Number of slots in the queue per thread.
-    #[arg(short, long, default_value_t = 8)]
+    #[options(default = "8")]
     slots: usize,
 
     /// Number of repeats.
-    #[arg(short, long, default_value_t = 1)]
+    #[options(default = "1")]
     repeat: usize,
 }
 
@@ -68,7 +66,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
 }
 
 fn main() -> Result<(), Error> {
-    let args = Args::parse();
+    let args = Args::parse_args_default_or_exit();
     let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
     let disk = ReadSlice(mmap.0);
     let disk: &(dyn ap_storage::Read + Sync) = &disk;

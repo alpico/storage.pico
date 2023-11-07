@@ -5,25 +5,23 @@ use ap_storage::{Error, Read, directory::Iterator, file::FileType};
 use ap_storage_ext4_ro::{Ext4Fs, File};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_memory::ReadSlice;
-use clap::Parser;
+use gumdrop::Options;
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[derive(Debug, Options)]
 struct Args {
+    /// Print the help message.
+    help: bool,
+
     /// File to benchmark.
-    #[arg(short, long)]
     file: String,
 
     /// Direct acccess.
-    #[arg(short, long, default_value_t = false)]
     no_direct: bool,
 
     /// Issue pread requests instead of memory mapping the whole file.
-    #[arg(short, long, default_value_t = false)]
     pread: bool,
 
     /// Leaf optimization
-    #[arg(short, long, default_value_t = false)]
     leaf_optimization: bool,
 }
 
@@ -53,7 +51,7 @@ fn visit(dir: &File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
 }
 
 fn main() -> Result<(), Error> {
-    let args = Args::parse();
+    let args = Args::parse_args_default_or_exit();
     let disk_pread = LinuxDisk::new(&args.file);
     let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
     let disk_mmap = ReadSlice(mmap.0);
