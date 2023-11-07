@@ -3,12 +3,12 @@
 
 mod structs;
 use ap_storage::{Error, Offset, Read, ReadExt};
-use structs::{BiosParameterBlock, DirEntry};
-mod file;
+use structs::{BiosParameterBlock, DirectoryEntry};
 mod directory;
+mod file;
 
-pub use file::File;
 pub use directory::DirIterator;
+pub use file::File;
 
 #[derive(Clone)]
 pub struct FatFs<'a> {
@@ -28,7 +28,7 @@ pub struct FatFs<'a> {
     /// The offset where the root-directory starts.
     root_start: Offset,
     /// Virtual directory entry for the root directory.
-    root_dir: DirEntry,
+    pub(crate) root_dir: DirectoryEntry,
     /// The uuid field.
     uuid: u32,
 }
@@ -47,7 +47,7 @@ impl<'a> FatFs<'a> {
     /// Mount the filesystem.
     pub fn new(disk: &'a dyn Read, sb_offset: u64) -> Result<Self, Error> {
         let buf: [u8; 512] = disk.read_object(sb_offset)?;
-        let mut bpb = unsafe { *(buf.as_ptr() as *const BiosParameterBlock) };
+        let bpb = unsafe { *(buf.as_ptr() as *const BiosParameterBlock) };
 
         // validate the super-block
         if buf[511] != 0xaa || buf[510] != 0x55 {
@@ -79,13 +79,12 @@ impl<'a> FatFs<'a> {
 
         // calculate the constants
         let sector_size = bpb.bytes_per_sector as u32;
-        let root_sectors =
-            (((bpb.root_entries as u32) << 5) + (sector_size - 1)) / sector_size;
+        let root_sectors = (((bpb.root_entries as u32) << 5) + (sector_size - 1)) / sector_size;
         let sectors_per_cluster = bpb.sectors_per_cluster as u32;
         let mut fat_start_sector = bpb.reserved_sectors as u32;
         let root_start =
             fat_start_sector + (bpb.num_fats as u32) * (left_or(bpb.fat_size16, bpb.fat_size32));
-        let data_start = (root_start + root_sectors) as Offset  * sector_size as Offset;
+        let data_start = (root_start + root_sectors) as Offset * sector_size as Offset;
         let clusters = (left_or(bpb.total_sectors16, bpb.total_sectors32)
             - (root_start + root_sectors))
             / sectors_per_cluster;
@@ -95,10 +94,6 @@ impl<'a> FatFs<'a> {
             _ => 32,
         };
         let fat_mask = 0x0fffffff & (!0u32 >> (32 - fat_type));
-        if fat_type != 32 {
-            bpb.root_cluster = 1;
-        }
-
         let uuid: u32 = unsafe {
             core::ptr::read_unaligned(
                 buf.as_ptr().add(if fat_type == 32 { 67 } else { 39 }) as *const u32
@@ -106,12 +101,10 @@ impl<'a> FatFs<'a> {
         };
 
         // init root directory entry
-        let root_dir = DirEntry {
+        let root_dir = DirectoryEntry {
             attr: 0x10,
             name: *b"..         ",
             size: root_sectors * sector_size,
-            cluster_lo: (bpb.root_cluster & 0xffff) as u16,
-            cluster_hi: (bpb.root_cluster >> 16) as u16,
             ..Default::default()
         };
 
@@ -145,7 +138,7 @@ impl<'a> FatFs<'a> {
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
         if cluster == 0 || cluster >= self.blocks {
-            return Err(anyhow::anyhow!("eof"))
+            return Err(anyhow::anyhow!("eof"));
         }
         let ofs = self.fat_start + cluster as Offset * self.fat_type as Offset / 8;
 

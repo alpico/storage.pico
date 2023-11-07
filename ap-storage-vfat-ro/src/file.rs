@@ -1,27 +1,26 @@
 //! File in VFAT
 
-use super::{structs::DirEntry, FatFs, DirIterator};
-use ap_storage::{Error, Offset, Read};
+use super::{structs::DirectoryEntry, DirIterator, FatFs};
+use ap_storage::{Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct File<'a> {
-    fs: &'a FatFs<'a>,
-    inode: DirEntry,
+    pub(crate) fs: &'a FatFs<'a>,
+    pub(crate) inode: DirectoryEntry,
     cache: RefCell<FileCache>,
 }
 
 /// The in-file cache to speedup linear reads.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 struct FileCache {
     block: u32,
     cluster: u32,
 }
 
-
 impl<'a> File<'a> {
     /// Creating a file from a directory entry.
-    pub(crate) fn new(fs: &'a FatFs<'a>, inode: DirEntry) -> Self {
+    pub(crate) fn new(fs: &'a FatFs<'a>, inode: DirectoryEntry) -> Self {
         Self {
             inode,
             fs,
@@ -29,9 +28,29 @@ impl<'a> File<'a> {
         }
     }
 
-    pub fn dir(&'a self) -> Option<DirIterator<'a>> {
+    /// Is the root directory.
+    pub fn is_root(&self) -> bool {
+        self.inode == self.fs.root_dir
+    }
+
+    /// Open a file relative to the given directory.
+    pub fn open(&'a self, mut offset: Offset) -> Result<Self, Error> {
+        if !self.inode.is_dir() {
+            return Err(anyhow::anyhow!("not a directory"));
+        }
+        if self.is_root() {
+            if offset < 2 {
+                return Ok(self.clone());
+            }
+            offset -= 2;
+        }
+
+        let entry: DirectoryEntry = (self as &dyn Read).read_object(32 * offset)?;
+        Ok(Self::new(self.fs, entry))
+    }
+    pub fn dir(&'a self, skip_ptr: bool) -> Option<DirIterator<'a>> {
         if self.inode.is_dir() {
-            return Some(DirIterator::new(self))
+            return Some(DirIterator::new(self, skip_ptr));
         }
         None
     }
@@ -56,16 +75,16 @@ impl Read for File<'_> {
             cache.cluster = self.inode.cluster();
         }
 
-        // root-directory on 
+        // root-directory on
         let ofs = {
-            if cache.cluster == 1 && self.fs.fat_type != 32 {
+            if cache.cluster == 0 {
                 self.fs.root_start
             } else {
                 // follow the FAT for the right block
-                
+
                 while cache.block != block {
                     cache.cluster = self.fs.follow_fat(cache.cluster)?;
-                    
+
                     // EOF or bad clusters?
                     if cache.cluster >= self.fs.fat_mask - 8 {
                         return Ok(0);
@@ -80,6 +99,8 @@ impl Read for File<'_> {
             max_n,
             self.fs.block_size as usize - offset_in_block as usize,
         );
-        self.fs.disk.read_bytes(ofs + offset_in_block, &mut buf[..max_n])
+        self.fs
+            .disk
+            .read_bytes(ofs + offset_in_block, &mut buf[..max_n])
     }
 }

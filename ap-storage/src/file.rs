@@ -5,6 +5,7 @@
 pub enum FileType {
     File,
     Directory,
+    Parent,
     SymLink,
     Unknown,
 }

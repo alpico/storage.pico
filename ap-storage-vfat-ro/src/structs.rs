@@ -1,8 +1,8 @@
 //! On-disk structs.
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 #[repr(packed)]
-pub struct DirEntry {
+pub struct DirectoryEntry {
     pub name: [u8; 11],
     pub attr: u8,
     pub _x: [u8; 8],
@@ -12,11 +12,11 @@ pub struct DirEntry {
     pub size: u32,
 }
 
-impl DirEntry {
+impl DirectoryEntry {
     pub fn is_dir(&self) -> bool {
         self.attr & 0x10 != 0
     }
-    
+
     pub fn cluster(&self) -> u32 {
         // Volume ID?
         if self.attr & 0x8 != 0 {
@@ -37,7 +37,7 @@ impl DirEntry {
 
     /// Returns the short-name of the directory.
     pub fn name(&self) -> [u8; 12] {
-        let mut res = [0; 12];
+        let mut res = [b' '; 12];
 
         // unused entries?
         if matches!(self.name[0], 0 | 0xe5) {
@@ -52,7 +52,7 @@ impl DirEntry {
             res[name.len()] = b'.';
             res[name.len() + 1..name.len() + 1 + ext.len()].copy_from_slice(ext);
         }
-        // magic value
+        // magic value to support KANJI encoding
         if res[0] == 0x05 {
             res[0] = 0xe5;
         }
@@ -60,11 +60,11 @@ impl DirEntry {
     }
 }
 
-impl core::fmt::Debug for DirEntry {
+impl core::fmt::Debug for DirectoryEntry {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             fmt,
-            "DirEntry({:x}, {:x}+{:x}, '{}')",
+            "DirectoryEntry({:x}, {:x}+{:x}, '{}')",
             self.attr,
             self.cluster(),
             self.size(),
