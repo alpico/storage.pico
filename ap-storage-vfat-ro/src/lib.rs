@@ -1,8 +1,11 @@
 //! Read from fat{12,16,32} filesystem.
+#![feature(byte_slice_trim_ascii)]
 
 mod structs;
 use structs::{DirEntry, BiosParameterBlock};
 use ap_storage::{Read, ReadExt, Error};
+mod file;
+pub use file::File;
 
 #[derive(Clone)]
 pub struct FatFs<'a> {
@@ -26,6 +29,11 @@ pub struct FatFs<'a> {
 }
 
 
+impl core::fmt::Debug for FatFs<'_> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(fmt, "FatFs{}(uuid {:x?}, cluster {} x {})", self.fat_type,self.uuid, self.sectors_per_cluster, self.sector_size)
+    }
+}
 
 impl<'a> FatFs<'a> {
     /// Mount the filesystem.
@@ -67,7 +75,7 @@ impl<'a> FatFs<'a> {
         let fat_type = if clusters < 4085 { 12} else if clusters < 65525 { 16 } else { 32 };
         let fat_mask = 0x0fffffff & (!0u32 >> (32 - fat_type));
 
-        let uuid: u32 = unsafe { *(buf.as_ptr().add(if fat_type == 32 { 67 } else { 39 }) as *const u32)};
+        let uuid: u32 = unsafe { core::ptr::read_unaligned(buf.as_ptr().add(if fat_type == 32 { 67 } else { 39 }) as *const u32) };
 
         // init root directory entry
         let root_dir = DirEntry {
@@ -85,5 +93,9 @@ impl<'a> FatFs<'a> {
         }
 
         Ok(Self { disk, sector_size, sectors_per_cluster, fat_type, fat_start, fat_mask, root_start, root_dir, uuid })
+    }
+
+    pub fn root(&self) -> File {
+        File::new(self.root_dir)
     }
 }

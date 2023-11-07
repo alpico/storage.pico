@@ -8,3 +8,6 @@ edition = "2021"
 [dependencies]
 anyhow = { version = "1.0.75", default-features = false }
 ap-storage={ path = "../ap-storage"}
+
+[dev-dependencies]
+ap-storage-linux={ path = "../ap-storage-linux"}

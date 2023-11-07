@@ -1,6 +1,6 @@
 //! On-disk structs.
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Default)]
 #[repr(packed)]
 pub struct DirEntry  {
     pub name: [u8; 11],
@@ -10,6 +10,48 @@ pub struct DirEntry  {
     pub wtime: u32,
     pub cluster_lo: u16,
     pub size: u32,
+}
+
+impl DirEntry {
+    fn cluster(&self) -> u32 {
+        (self.cluster_hi as u32) << 16 | self.cluster_lo as u32
+    }
+
+    fn size(&self) -> u32 {
+        unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) }
+    }
+
+    /// Returns the short-name of the directory.
+    fn name(&self) -> [u8; 12] {
+        let mut res = [0; 12];
+
+        // unused entries?
+        if matches!(self.name[0], 0 | 0xe5) {
+            return res;
+        }
+
+        // the parts are padded independently
+        let name = self.name[..8].trim_ascii_end();
+        let ext = self.name[8..].trim_ascii_end();
+        res[..name.len()].copy_from_slice(name);
+        if !ext.is_empty() {
+            res[name.len()] = b'.';
+            res[name.len() + 1..name.len() + 1 + ext.len()].copy_from_slice(ext);
+        }
+        // magic value
+        if res[0] == 0x05 {
+            res[0] = 0xe5;
+        }
+        res
+    }
+
+}
+
+
+impl core::fmt::Debug for DirEntry {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(fmt, "DirEntry({:x}, {:x} + {}, '{}')", self.attr, self.cluster(), self.size(), core::str::from_utf8(&self.name()).unwrap())
+    }
 }
 
 
