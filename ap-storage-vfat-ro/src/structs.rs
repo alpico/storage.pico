@@ -2,7 +2,7 @@
 
 #[derive(Clone, Copy, Default)]
 #[repr(packed)]
-pub struct DirEntry  {
+pub struct DirEntry {
     pub name: [u8; 11],
     pub attr: u8,
     pub _x: [u8; 8],
@@ -13,16 +13,26 @@ pub struct DirEntry  {
 }
 
 impl DirEntry {
-    fn cluster(&self) -> u32 {
+    pub fn cluster(&self) -> u32 {
+        // Volume ID?
+        if self.attr & 0x8 != 0 {
+            return 0;
+        }
         (self.cluster_hi as u32) << 16 | self.cluster_lo as u32
     }
 
-    fn size(&self) -> u32 {
-        unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) }
+    pub fn size(&self) -> u32 {
+        if self.attr & 0x10 != 0 {
+            // There is no size field in a directory.
+            // But we know there cannot be more then 64k entries per directory.
+            65536 * 32
+        } else {
+            unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) }
+        }
     }
 
     /// Returns the short-name of the directory.
-    fn name(&self) -> [u8; 12] {
+    pub fn name(&self) -> [u8; 12] {
         let mut res = [0; 12];
 
         // unused entries?
@@ -44,16 +54,20 @@ impl DirEntry {
         }
         res
     }
-
 }
-
 
 impl core::fmt::Debug for DirEntry {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(fmt, "DirEntry({:x}, {:x} + {}, '{}')", self.attr, self.cluster(), self.size(), core::str::from_utf8(&self.name()).unwrap())
+        write!(
+            fmt,
+            "DirEntry({:x}, {:x}+{:x}, '{}')",
+            self.attr,
+            self.cluster(),
+            self.size(),
+            core::str::from_utf8(&self.name()).unwrap()
+        )
     }
 }
-
 
 /// The minimal BIOS Parameter Block as present in the first sector of the disk.
 #[derive(Clone, Copy, Debug)]
