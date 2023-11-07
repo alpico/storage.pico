@@ -8,7 +8,7 @@ mod inode;
 mod superblock;
 
 pub use directory::DirIterator;
-pub use file::File;
+pub use file::Ext4File;
 pub use inode::Inode;
 pub use superblock::SuperBlock;
 
@@ -80,7 +80,7 @@ impl<'a> Ext4Fs<'a> {
     }
 
     /// Return the root directory
-    pub fn root(&self) -> Result<File, Error> {
-        File::new(self, 2)
+    pub fn root(&self) -> Result<Ext4File, Error> {
+        Ext4File::new(self, 2)
     }
 }

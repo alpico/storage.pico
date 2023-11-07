@@ -1,7 +1,7 @@
 //! Directory iteration for vfat.
 
 use super::{DirectoryEntry, Error, FatFile, Offset};
-use ap_storage::{file::FileType, Read, ReadExt, directory::{self, Iterator}};
+use ap_storage::{file::{FileType, File}, Read, ReadExt, directory::{self, Iterator}};
 
 pub struct DirIterator<'a> {
     file: &'a FatFile<'a>,
@@ -9,7 +9,7 @@ pub struct DirIterator<'a> {
 }
 
 impl<'a> DirIterator<'a> {
-    pub fn new(file: &'a FatFile) -> Self {
+    pub(crate) fn new(file: &'a FatFile) -> Self {
         Self {
             file,
             offset: 0,

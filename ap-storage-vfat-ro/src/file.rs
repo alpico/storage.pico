@@ -1,7 +1,7 @@
 //! File in VFAT
 
 use super::{DirectoryEntry, DirIterator, FatFs};
-use ap_storage::{Error, Offset, Read, ReadExt};
+use ap_storage::{Error, Offset, Read, ReadExt, file::File, directory::Iterator};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -28,13 +28,16 @@ impl<'a> FatFile<'a> {
         }
     }
 
+}
+
+impl<'a> File for FatFile<'a> {
     /// Is the root directory.
-    pub fn is_root(&self) -> bool {
+    fn is_root(&self) -> bool {
         self.inode.cluster() == 0
     }
 
     /// Open a file relative to the given directory.
-    pub fn open(&'a self, mut offset: Offset) -> Result<Self, Error> {
+    fn open(&self, mut offset: Offset) -> Result<Self, Error> {
         if !self.inode.is_dir() {
             return Err(anyhow::anyhow!("not a directory"));
         }
@@ -50,13 +53,15 @@ impl<'a> FatFile<'a> {
     }
 
     /// Return a directory iterator.
-    pub fn dir(&'a self) -> Option<DirIterator<'a>> {
+    fn dir(&self) -> Option<impl Iterator> {
         if self.inode.is_dir() {
             return Some(DirIterator::new(self));
         }
         None
     }
+
 }
+
 
 impl Read for FatFile<'_> {
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
@@ -106,3 +111,5 @@ impl Read for FatFile<'_> {
             .read_bytes(ofs + offset_in_block, &mut buf[..max_n])
     }
 }
+
+

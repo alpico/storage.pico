@@ -1,22 +1,26 @@
 //! File support.
 
 use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
+use crate::directory::DirEntryHeader;
+use ap_storage::{directory::Iterator, file::File};
 
-pub struct File<'a> {
+pub struct Ext4File<'a> {
     block_size: u64,
-    disk: &'a dyn Read,
+    fs: &'a Ext4Fs<'a>,
     inode: Inode,
     leaf_optimization: bool,
+    is_root: bool,
 }
 
-impl<'a> File<'a> {
+impl<'a> Ext4File<'a> {
     /// Open the given file by inode number.
     pub fn new(fs: &'a Ext4Fs, nr: u64) -> Result<Self, Error> {
         Ok(Self {
             block_size: fs.sb.block_size(),
-            disk: fs.disk,
+            fs,
             inode: fs.inode(nr)?,
             leaf_optimization: fs.leaf_optimization,
+            is_root: nr == 2,
         })
     }
 
@@ -32,7 +36,7 @@ impl<'a> File<'a> {
                 *(self.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X)
             }),
             // Could detect errors here
-            _ => self.disk.read_object(ofs),
+            _ => self.fs.disk.read_object(ofs),
         }
     }
 
@@ -98,8 +102,11 @@ impl<'a> File<'a> {
         }
     }
 
+}
+
+impl<'a> File for Ext4File<'a> {
     /// Return a iterator if this is a directory.
-    pub fn dir(&self) -> Option<DirIterator> {
+    fn dir(&self) -> Option<impl Iterator> {
         if self.inode.ftype() == FileType::Directory
             && (self.inode.version != 1 || !self.leaf_optimization)
         {
@@ -107,9 +114,23 @@ impl<'a> File<'a> {
         }
         None
     }
+
+    fn is_root(&self) -> bool {
+        self.is_root
+    }
+    
+    fn open(&self, offset: Offset) -> Result<Self, Error> where Self:Sized {
+        if self.inode.ftype() != FileType::Directory {
+            return Err(anyhow::anyhow!("not a directory"));
+        }
+        let header: DirEntryHeader = (self as &dyn Read).read_object(offset)?;
+        Self::new(self.fs, header.inode())
+    }
+
 }
 
-impl<'a> Read for File<'a> {
+
+impl<'a> Read for Ext4File<'a> {
     /// Read in the given inode.
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         let size = self.inode.size();
@@ -152,7 +173,7 @@ impl<'a> Read for File<'a> {
             return Ok(valid_size);
         }
         let ofs = phys * self.block_size + offset_in_block;
-        self.disk.read_bytes(ofs, buf)
+        self.fs.disk.read_bytes(ofs, buf)
     }
 }
 

@@ -2,8 +2,8 @@
 
 use al_crunch_pool::{execute, Options, Sender};
 use al_mmap::Mmap;
-use ap_storage::{Error, directory::Iterator, file::FileType};
-use ap_storage_ext4_ro::{Ext4Fs, File};
+use ap_storage::{Error, directory::Iterator, file::{File, FileType}};
+use ap_storage_ext4_ro::{Ext4Fs, Ext4File};
 use ap_storage_memory::ReadSlice;
 use std::rc::Rc;
 use gumdrop::Options as GumdropOptions;
@@ -42,7 +42,7 @@ pub struct WorkerState {
 
 fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
     let fs = Rc::clone(&worker.fs);
-    let dir = File::new(&fs, nr).unwrap();
+    let dir = Ext4File::new(&fs, nr).unwrap();
     let Some(mut iter) = dir.dir() else { return };
 
     while let Ok(Some(entry)) = iter.next(&mut []) {
@@ -51,7 +51,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
         }
         worker.count += 1;
 
-        let Ok(child) = File::new(&fs, entry.id) else {
+        let Ok(child) = Ext4File::new(&fs, entry.id) else {
             continue;
         };
         worker.size += child.size();

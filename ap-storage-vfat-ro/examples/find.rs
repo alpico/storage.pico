@@ -1,4 +1,4 @@
-use ap_storage::{Error, file::FileType, directory::Iterator};
+use ap_storage::{Error, file::FileType, directory::Iterator, file::File};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_vfat_ro::{FatFs, FatFile};
 use gumdrop::Options;
