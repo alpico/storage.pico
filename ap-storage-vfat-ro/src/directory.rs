@@ -1,6 +1,6 @@
 //! Directory iteration for vfat.
 
-use super::{structs::DirectoryEntry, Error, File, Offset};
+use super::{DirectoryEntry, Error, File, Offset};
 use ap_storage::{FileType, Read, ReadExt};
 
 #[derive(Debug)]

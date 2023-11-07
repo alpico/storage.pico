@@ -1,9 +1,9 @@
 //! Read from fat{12,16,32} filesystem.
+#![no_std]
 #![feature(byte_slice_trim_ascii)]
 
-mod structs;
 use ap_storage::{Error, Offset, Read, ReadExt};
-use structs::{BiosParameterBlock, DirectoryEntry};
+use ap_storage_vfat::{BiosParameterBlock, DirectoryEntry};
 mod directory;
 mod file;
 
@@ -34,7 +34,7 @@ pub struct FatFs<'a> {
 }
 
 impl core::fmt::Debug for FatFs<'_> {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             fmt,
             "FatFs{}(uuid {:x?}, bs {})",

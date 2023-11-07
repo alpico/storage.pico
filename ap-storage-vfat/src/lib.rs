@@ -1,13 +1,20 @@
-//! On-disk structs.
+//! On-disk structures for FAT filesystems.
+#![no_std]
+#![feature(byte_slice_trim_ascii)]
 
 #[derive(Clone, Copy, Default, PartialEq)]
-#[repr(packed)]
+#[repr(C)]
 pub struct DirectoryEntry {
     pub name: [u8; 11],
     pub attr: u8,
-    pub _x: [u8; 8],
+    pub res: u8,
+    pub btime_tenth: u8,
+    pub btime_time: u16,
+    pub btime_date: u16,
+    pub atime_date: u16,
     pub cluster_hi: u16,
-    pub wtime: u32,
+    pub mtime_time: u16,
+    pub mtime_date: u16,
     pub cluster_lo: u16,
     pub size: u32,
 }
@@ -61,7 +68,7 @@ impl DirectoryEntry {
 }
 
 impl core::fmt::Debug for DirectoryEntry {
-    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             fmt,
             "DirectoryEntry({:x}, {:x}+{:x}, '{}')",

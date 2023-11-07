@@ -1,6 +1,6 @@
 //! File in VFAT
 
-use super::{structs::DirectoryEntry, DirIterator, FatFs};
+use super::{DirectoryEntry, DirIterator, FatFs};
 use ap_storage::{Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
