@@ -12,17 +12,19 @@ impl<'a> DirIterator<'a> {
         Self { parent, offset: 0 }
     }
 
-    pub fn next(&mut self, name: &mut [u8; 255]) -> Result<DirEntryHeader, Error> {
+    pub fn next(&mut self, name: &mut [u8]) -> Result<DirEntryHeader, Error> {
         const O: usize = core::mem::size_of::<DirEntryHeader>();
 
         let header: DirEntryHeader = self.parent.read_object(self.offset)?;
-        let name_len = header.name_len as usize;
+        let name_len = core::cmp::min(header.name_len as usize, name.len());
 
-        let n = self
-            .parent
-            .read_bytes(self.offset + O as u64, &mut name[..name_len])?;
-        if n < name_len {
-            return Err(anyhow::anyhow!("truncated dir"));
+        if name_len > 0 {
+            let n = self
+                .parent
+                .read_bytes(self.offset + O as u64, &mut name[..name_len])?;
+            if n < name_len {
+                return Err(anyhow::anyhow!("truncated dir"));
+            }
         }
         self.offset += header.rec_len as u64;
         Ok(header)

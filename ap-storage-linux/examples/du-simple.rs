@@ -31,13 +31,16 @@ fn visit(dir: &File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
     let Some(mut iter) = dir.dir() else {
         return Ok((0, 0));
     };
-    let mut buf = [0u8; 255];
+
+    // skip own and parent directories
+    let _ = iter.next(&mut []);
+    let _ = iter.next(&mut []);
+    
     let mut count = 0;
     let mut size = 0;
 
-    while let Ok(entry) = iter.next(&mut buf) {
-        let name = &buf[..entry.name_len()];
-        if entry.name_len() < 3 && (name == b"" || name == b"." || name == b"..") {
+    while let Ok(entry) = iter.next(&mut []) {
+        if entry.name_len() == 0 {
             continue;
         }
         count += 1;

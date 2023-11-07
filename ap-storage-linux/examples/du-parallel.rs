@@ -47,10 +47,11 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
     let dir = File::new(&fs, nr).unwrap();
     let Some(mut iter) = dir.dir() else { return };
 
-    let mut buf = [0u8; 255];
-    while let Ok(entry) = iter.next(&mut buf) {
-        let name = &buf[..entry.name_len()];
-        if entry.name_len() < 3 && (name == b"" || name == b"." || name == b"..") {
+    // skip own and parent directories
+    let _ = iter.next(&mut []);
+    let _ = iter.next(&mut []);
+    while let Ok(entry) = iter.next(&mut []) {
+        if entry.name_len() == 0 {
             continue;
         }
         worker.count += 1;
