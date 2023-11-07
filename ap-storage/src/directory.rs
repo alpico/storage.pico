@@ -15,7 +15,6 @@ pub struct Item {
     pub typ: FileType,
 }
 
-
 /// Iterator over directories.
 pub trait Iterator {
     fn next(&mut self, name: &mut [u8]) -> Result<Option<Item>, Error>;

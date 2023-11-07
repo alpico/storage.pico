@@ -9,5 +9,3 @@ pub enum FileType {
     SymLink,
     Unknown,
 }
-
-

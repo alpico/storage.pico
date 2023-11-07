@@ -12,10 +12,11 @@ struct CommandOptions {
 }
 
 fn visit(opts: &CommandOptions, f: &FatFile, path: String) -> Result<(), Error> {
-    let mut iter = f.dir(!opts.all).unwrap();
+    let mut iter = f.dir().unwrap();
     let mut name = [0u8; 256];
     while let Some(entry) = iter.next(&mut name)? {
-        if matches!(entry.typ, FileType::Unknown) {
+        if entry.typ == FileType::Unknown ||
+            !opts.all && entry.typ == FileType::Parent {
             continue;
         }
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();

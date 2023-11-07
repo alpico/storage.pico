@@ -9,10 +9,10 @@ pub struct DirIterator<'a> {
 }
 
 impl<'a> DirIterator<'a> {
-    pub fn new(file: &'a FatFile, skip_parent: bool) -> Self {
+    pub fn new(file: &'a FatFile) -> Self {
         Self {
             file,
-            offset: if skip_parent { 2 } else { 0 },
+            offset: 0,
         }
     }
 }

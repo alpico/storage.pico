@@ -1,7 +1,7 @@
 //! Disk usage for an ext4 filesystem.
 
 use al_mmap::Mmap;
-use ap_storage::{Error, Read};
+use ap_storage::{Error, Read, directory::Iterator, file::FileType};
 use ap_storage_ext4_ro::{Ext4Fs, File};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_memory::ReadSlice;
@@ -32,21 +32,18 @@ fn visit(dir: &File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
         return Ok((0, 0));
     };
 
-    // skip own and parent directories
-    let _ = iter.next(&mut []);
-    let _ = iter.next(&mut []);
-    
     let mut count = 0;
     let mut size = 0;
 
-    while let Ok(entry) = iter.next(&mut []) {
-        if entry.name_len() == 0 {
+    while let Some(entry) = iter.next(&mut [])? {
+        if matches!(entry.typ, FileType::Unknown | FileType::Parent) {
             continue;
         }
+
         count += 1;
-        let child = File::new(fs, entry.inode())?;
+        let child = File::new(fs, entry.id)?;
         size += child.size();
-        if entry.is_dir() {
+        if entry.typ == FileType::Directory {
             let (x, y) = visit(&child, fs)?;
             count += x;
             size += y;

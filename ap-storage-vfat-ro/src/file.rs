@@ -50,9 +50,9 @@ impl<'a> FatFile<'a> {
     }
 
     /// Return a directory iterator.
-    pub fn dir(&'a self, skip_ptr: bool) -> Option<DirIterator<'a>> {
+    pub fn dir(&'a self) -> Option<DirIterator<'a>> {
         if self.inode.is_dir() {
-            return Some(DirIterator::new(self, skip_ptr));
+            return Some(DirIterator::new(self));
         }
         None
     }

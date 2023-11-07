@@ -2,7 +2,7 @@
 
 use al_crunch_pool::{execute, Options, Sender};
 use al_mmap::Mmap;
-use ap_storage::Error;
+use ap_storage::{Error, directory::Iterator, file::FileType};
 use ap_storage_ext4_ro::{Ext4Fs, File};
 use ap_storage_memory::ReadSlice;
 use clap::Parser;
@@ -47,24 +47,21 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
     let dir = File::new(&fs, nr).unwrap();
     let Some(mut iter) = dir.dir() else { return };
 
-    // skip own and parent directories
-    let _ = iter.next(&mut []);
-    let _ = iter.next(&mut []);
-    while let Ok(entry) = iter.next(&mut []) {
-        if entry.name_len() == 0 {
+    while let Ok(Some(entry)) = iter.next(&mut []) {
+        if matches!(entry.typ, FileType::Unknown | FileType::Parent) {
             continue;
         }
         worker.count += 1;
 
-        let Ok(child) = File::new(&fs, entry.inode()) else {
+        let Ok(child) = File::new(&fs, entry.id) else {
             continue;
         };
         worker.size += child.size();
 
-        if entry.is_dir() {
+        if entry.typ == FileType::Directory {
             let sender2 = sender.clone();
             sender.send(worker, move |state| {
-                visit(&sender2, entry.inode(), state);
+                visit(&sender2, entry.id, state);
             });
         }
     }
