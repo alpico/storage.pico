@@ -12,16 +12,7 @@ pub use file::File;
 pub use inode::Inode;
 pub use superblock::SuperBlock;
 
-use ap_storage::{Error, Offset, Read, ReadExt};
-
-/// Generic file-types.
-#[derive(Debug, PartialEq, Eq)]
-pub enum FileType {
-    File,
-    Directory,
-    SymLink,
-    Unknown,
-}
+use ap_storage::{Error, Offset, Read, ReadExt, FileType};
 
 #[derive(Clone)]
 pub struct Ext4Fs<'a> {

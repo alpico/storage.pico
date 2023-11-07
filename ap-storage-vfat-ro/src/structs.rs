@@ -13,6 +13,10 @@ pub struct DirEntry {
 }
 
 impl DirEntry {
+    pub fn is_dir(&self) -> bool {
+        self.attr & 0x10 != 0
+    }
+    
     pub fn cluster(&self) -> u32 {
         // Volume ID?
         if self.attr & 0x8 != 0 {
@@ -23,7 +27,7 @@ impl DirEntry {
 
     pub fn size(&self) -> u32 {
         let mut res = unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) };
-        if self.attr & 0x10 != 0 && res == 0 {
+        if self.is_dir() && res == 0 {
             // The size of a directory is typically zero.
             // But we know there cannot be more then 64k entries per directory.
             res = 65536 * 32

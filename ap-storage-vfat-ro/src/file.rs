@@ -1,6 +1,6 @@
 //! File in VFAT
 
-use super::{structs::DirEntry, FatFs};
+use super::{structs::DirEntry, FatFs, DirIterator};
 use ap_storage::{Error, Offset, Read};
 use core::cell::RefCell;
 
@@ -28,6 +28,13 @@ impl<'a> File<'a> {
             cache: Default::default(),
         }
     }
+
+    pub fn dir(&'a self) -> Option<DirIterator<'a>> {
+        if self.inode.is_dir() {
+            return Some(DirIterator::new(self))
+        }
+        None
+    }
 }
 
 impl Read for File<'_> {
@@ -49,22 +56,30 @@ impl Read for File<'_> {
             cache.cluster = self.inode.cluster();
         }
 
-        // follow the FAT for the right block
-        while cache.block != block {
-            cache.cluster = self.fs.follow_fat(cache.cluster)?;
-
-            // EOF or bad clusters?
-            if cache.cluster >= self.fs.fat_mask - 8 {
-                return Ok(0);
+        // root-directory on 
+        let ofs = {
+            if cache.cluster == 1 && self.fs.fat_type != 32 {
+                self.fs.root_start
+            } else {
+                // follow the FAT for the right block
+                
+                while cache.block != block {
+                    cache.cluster = self.fs.follow_fat(cache.cluster)?;
+                    
+                    // EOF or bad clusters?
+                    if cache.cluster >= self.fs.fat_mask - 8 {
+                        return Ok(0);
+                    }
+                    cache.block += 1;
+                }
+                (cache.cluster as u64 - 2) * self.fs.block_size as u64 + self.fs.data_start
             }
-            cache.block += 1;
-        }
+        };
         // limit the bytes to the current block
         let max_n = core::cmp::min(
             max_n,
             self.fs.block_size as usize - offset_in_block as usize,
         );
-        let ofs = cache.cluster as u64 * self.fs.block_size as u64 + offset_in_block;
-        self.fs.disk.read_bytes(ofs, &mut buf[..max_n])
+        self.fs.disk.read_bytes(ofs + offset_in_block, &mut buf[..max_n])
     }
 }
