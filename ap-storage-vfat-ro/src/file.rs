@@ -5,20 +5,20 @@ use ap_storage::{Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
-pub struct File<'a> {
+pub struct FatFile<'a> {
     pub(crate) fs: &'a FatFs<'a>,
     pub(crate) inode: DirectoryEntry,
-    cache: RefCell<FileCache>,
+    cache: RefCell<FatFileCache>,
 }
 
 /// The in-file cache to speedup linear reads.
 #[derive(Debug, Default, Clone)]
-struct FileCache {
+struct FatFileCache {
     block: u32,
     cluster: u32,
 }
 
-impl<'a> File<'a> {
+impl<'a> FatFile<'a> {
     /// Creating a file from a directory entry.
     pub(crate) fn new(fs: &'a FatFs<'a>, inode: DirectoryEntry) -> Self {
         Self {
@@ -30,7 +30,7 @@ impl<'a> File<'a> {
 
     /// Is the root directory.
     pub fn is_root(&self) -> bool {
-        self.inode == self.fs.root_dir
+        self.inode.cluster() == 0
     }
 
     /// Open a file relative to the given directory.
@@ -48,6 +48,8 @@ impl<'a> File<'a> {
         let entry: DirectoryEntry = (self as &dyn Read).read_object(32 * offset)?;
         Ok(Self::new(self.fs, entry))
     }
+
+    /// Return a directory iterator.
     pub fn dir(&'a self, skip_ptr: bool) -> Option<DirIterator<'a>> {
         if self.inode.is_dir() {
             return Some(DirIterator::new(self, skip_ptr));
@@ -56,7 +58,7 @@ impl<'a> File<'a> {
     }
 }
 
-impl Read for File<'_> {
+impl Read for FatFile<'_> {
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         let size = self.inode.size();
         if offset >= size.into() {

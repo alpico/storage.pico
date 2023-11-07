@@ -36,7 +36,7 @@ impl DirectoryEntry {
         let mut res = unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) };
         if self.is_dir() && res == 0 {
             // The size of a directory is typically zero.
-            // But we know there cannot be more then 64k entries per directory.
+            // But there will never be more then 64k entries per directory.
             res = 65536 * 32
         }
         res

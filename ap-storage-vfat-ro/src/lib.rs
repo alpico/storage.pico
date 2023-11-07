@@ -8,7 +8,7 @@ mod directory;
 mod file;
 
 pub use directory::DirIterator;
-pub use file::File;
+pub use file::FatFile;
 
 #[derive(Clone)]
 pub struct FatFs<'a> {
@@ -28,7 +28,7 @@ pub struct FatFs<'a> {
     /// The offset where the root-directory starts.
     root_start: Offset,
     /// Virtual directory entry for the root directory.
-    pub(crate) root_dir: DirectoryEntry,
+    root_size: u32,
     /// The uuid field.
     uuid: u32,
 }
@@ -100,14 +100,6 @@ impl<'a> FatFs<'a> {
             )
         };
 
-        // init root directory entry
-        let root_dir = DirectoryEntry {
-            attr: 0x10,
-            name: *b"..         ",
-            size: root_sectors * sector_size,
-            ..Default::default()
-        };
-
         // check for active fat
         if fat_type == 32
             && (bpb.ext_flags & 0x80) != 0
@@ -121,18 +113,25 @@ impl<'a> FatFs<'a> {
             block_size: sector_size * sectors_per_cluster,
             blocks: clusters,
             data_start,
+            root_start: root_start as Offset * sector_size as Offset,
             fat_type,
             fat_start: fat_start_sector as Offset * sector_size as Offset,
-            root_start: root_start as Offset * sector_size as Offset,
             fat_mask,
-            root_dir,
+            root_size: root_sectors * sector_size,
             uuid,
         })
     }
 
     /// Return the root directory.
-    pub fn root(&self) -> File {
-        File::new(self, self.root_dir)
+    pub fn root(&self) -> FatFile {
+        let root_dir = DirectoryEntry {
+            attr: 0x10,
+            name: *b"..         ",
+            size: self.root_size,
+            ..Default::default()
+        };
+
+        FatFile::new(self, root_dir)
     }
 
     /// Follow the fat one entry at a time.

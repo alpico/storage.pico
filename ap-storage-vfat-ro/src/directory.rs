@@ -1,34 +1,24 @@
 //! Directory iteration for vfat.
 
-use super::{DirectoryEntry, Error, File, Offset};
-use ap_storage::{FileType, Read, ReadExt};
-
-#[derive(Debug)]
-pub struct DirEntry {
-    /// The offset inside the parent. This is used to open the file relative to the parent.
-    pub offset: u64,
-    /// An unique ID of the referenced file.  Usefull for detecting hard-links.
-    pub id: u64,
-    /// The maximal length of the name this file has.
-    pub nlen: usize,
-    /// The file-type.
-    pub typ: FileType,
-}
+use super::{DirectoryEntry, Error, FatFile, Offset};
+use ap_storage::{file::FileType, Read, ReadExt, directory::{self, Iterator}};
 
 pub struct DirIterator<'a> {
-    file: &'a File<'a>,
+    file: &'a FatFile<'a>,
     offset: Offset,
 }
 
 impl<'a> DirIterator<'a> {
-    pub fn new(file: &'a File, skip_ptr: bool) -> Self {
+    pub fn new(file: &'a FatFile, skip_parent: bool) -> Self {
         Self {
             file,
-            offset: if skip_ptr { 2 } else { 0 },
+            offset: if skip_parent { 2 } else { 0 },
         }
     }
+}
 
-    pub fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, Error> {
+impl<'a> Iterator for DirIterator<'a> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
         let entry: DirectoryEntry = if !self.file.is_root() {
             (self.file as &dyn Read).read_object(self.offset * 32)?
         } else {
@@ -64,7 +54,7 @@ impl<'a> DirIterator<'a> {
         name[..n].copy_from_slice(&shortname[..n]);
 
         self.offset += 1;
-        Ok(Some(DirEntry {
+        Ok(Some(directory::Item {
             offset: self.offset - 1,
             nlen,
             typ,

@@ -1,5 +1,5 @@
 //! The alpico storage interfaces.
-#![allow(async_fn_in_trait)]
+
 
 /// Offset in the underlying storage.
 pub type Offset = u64;
@@ -11,5 +11,5 @@ mod read;
 pub use read::*;
 mod write;
 pub use write::*;
-mod file;
-pub use file::*;
+pub mod file;
+pub mod directory;

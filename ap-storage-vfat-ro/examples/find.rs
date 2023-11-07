@@ -1,6 +1,6 @@
-use ap_storage::{Error, FileType};
+use ap_storage::{Error, file::FileType, directory::Iterator};
 use ap_storage_linux::LinuxDisk;
-use ap_storage_vfat_ro::{FatFs, File};
+use ap_storage_vfat_ro::{FatFs, FatFile};
 use gumdrop::Options;
 
 #[derive(Debug, Options)]
@@ -11,7 +11,7 @@ struct CommandOptions {
     all: bool,
 }
 
-fn visit(opts: &CommandOptions, f: &File, path: String) -> Result<(), Error> {
+fn visit(opts: &CommandOptions, f: &FatFile, path: String) -> Result<(), Error> {
     let mut iter = f.dir(!opts.all).unwrap();
     let mut name = [0u8; 256];
     while let Some(entry) = iter.next(&mut name)? {

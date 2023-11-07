@@ -12,7 +12,7 @@ pub use file::File;
 pub use inode::Inode;
 pub use superblock::SuperBlock;
 
-use ap_storage::{Error, Offset, Read, ReadExt, FileType};
+use ap_storage::{Error, Offset, Read, ReadExt, file::FileType};
 
 #[derive(Clone)]
 pub struct Ext4Fs<'a> {
