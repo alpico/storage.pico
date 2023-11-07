@@ -1,35 +1,41 @@
 use ap_storage::{Error, FileType};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_vfat_ro::{FatFs, File};
+use gumdrop::Options;
 
-fn visit(f: &File, path: String) -> Result<(), Error> {
-    let mut iter = f.dir(false).unwrap();
+#[derive(Debug, Options)]
+struct CommandOptions {
+    /// Print the help message.
+    help: bool,
+    /// Show all entries.
+    all: bool,
+}
+
+fn visit(opts: &CommandOptions, f: &File, path: String) -> Result<(), Error> {
+    let mut iter = f.dir(!opts.all).unwrap();
     let mut name = [0u8; 256];
     while let Some(entry) = iter.next(&mut name)? {
-        if matches!(entry.typ, FileType::Unknown | FileType::Parent) {
+        if matches!(entry.typ, FileType::Unknown) {
             continue;
         }
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();
-        println!("{path}/{st}\t{entry:?}");
+        println!("{path}/{st}");
 
         if entry.typ == FileType::Directory {
             let mut child = path.clone();
             child.push_str("/");
             child.push_str(st);
-            visit(&f.open(entry.offset).unwrap(), child)?;
+            visit(opts, &f.open(entry.offset).unwrap(), child)?;
         }
     }
     Ok(())
 }
 
 fn main() -> Result<(), Error> {
+    let opts = CommandOptions::parse_args_default_or_exit();
     let disk = LinuxDisk::new("/dev/stdin");
     let fs = FatFs::new(&disk, 0)?;
-    dbg!(&fs);
     let root = fs.root();
-    dbg!(&root);
-
-    visit(&root, "".to_string())?;
-    // XXX lookup file
+    visit(&opts, &root, "".to_string())?;
     Ok(())
 }

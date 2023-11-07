@@ -11,3 +11,4 @@ ap-storage={ path = "../ap-storage"}
 
 [dev-dependencies]
 ap-storage-linux={ path = "../ap-storage-linux"}
+gumdrop = "0.8.1"

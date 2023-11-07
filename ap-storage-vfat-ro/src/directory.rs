@@ -36,7 +36,7 @@ impl<'a> DirIterator<'a> {
             match self.offset {
                 0 => self.file.inode,
                 1 => self.file.inode,
-                _ => (self.file as &dyn Read).read_object(self.offset*32 - 64)?,
+                _ => (self.file as &dyn Read).read_object(self.offset * 32 - 64)?,
             }
         };
 
