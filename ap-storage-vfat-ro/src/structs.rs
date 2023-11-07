@@ -22,13 +22,13 @@ impl DirEntry {
     }
 
     pub fn size(&self) -> u32 {
-        if self.attr & 0x10 != 0 {
-            // There is no size field in a directory.
+        let mut res = unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) };
+        if self.attr & 0x10 != 0 && res == 0 {
+            // The size of a directory is typically zero.
             // But we know there cannot be more then 64k entries per directory.
-            65536 * 32
-        } else {
-            unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) }
+            res = 65536 * 32
         }
+        res
     }
 
     /// Returns the short-name of the directory.

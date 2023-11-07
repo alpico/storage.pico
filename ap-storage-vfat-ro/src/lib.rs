@@ -73,7 +73,7 @@ impl<'a> FatFs<'a> {
         // calculate the constants
         let sector_size = bpb.bytes_per_sector as u32;
         let root_sectors =
-            (((bpb.root_entries as u32) << 5) + (bpb.bytes_per_sector as u32 - 1)) / sector_size;
+            (((bpb.root_entries as u32) << 5) + (sector_size - 1)) / sector_size;
         let sectors_per_cluster = bpb.sectors_per_cluster as u32;
         let mut fat_start_sector = bpb.reserved_sectors as u32;
         let root_start =
