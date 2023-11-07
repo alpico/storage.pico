@@ -59,6 +59,10 @@ impl<'a> File for FatFile<'a> {
         }
         None
     }
+    fn size(&self) -> Offset {
+        // XXX measure on directories
+        self.inode.size().into()
+    }
 
 }
 

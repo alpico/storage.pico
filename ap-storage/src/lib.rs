@@ -14,3 +14,8 @@ mod write;
 pub mod directory;
 pub mod file;
 
+
+pub trait FileSystem {
+    /// Return the root directory.
+    fn root(&self) -> Result<impl file::File + '_, Error>;
+}

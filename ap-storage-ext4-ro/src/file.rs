@@ -127,6 +127,10 @@ impl<'a> File for Ext4File<'a> {
         Self::new(self.fs, header.inode())
     }
 
+    fn size(&self) -> Offset {
+        self.inode.size()
+    }
+
 }
 
 

@@ -1,8 +1,7 @@
-//! Disk usage for an ext4 filesystem.
+//! Disk usage of the whole filesystem.
 
 use al_mmap::Mmap;
-use ap_storage::{Error, Read, directory::Iterator, file::{File, FileType}};
-use ap_storage_ext4_ro::{Ext4Fs, Ext4File};
+use ap_storage::{Error, Read, directory::Iterator, file::{File, FileType}, FileSystem};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options;
@@ -25,7 +24,7 @@ struct Args {
     leaf_optimization: bool,
 }
 
-fn visit(dir: &Ext4File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
+fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
     let Some(mut iter) = dir.dir() else {
         return Ok((0, 0));
     };
@@ -39,10 +38,10 @@ fn visit(dir: &Ext4File<'_>, fs: &Ext4Fs) -> Result<(usize, u64), Error> {
         }
 
         count += 1;
-        let child = Ext4File::new(fs, entry.id)?;
+        let child = dir.open(entry.offset)?;
         size += child.size();
         if entry.typ == FileType::Directory {
-            let (x, y) = visit(&child, fs)?;
+            let (x, y) = visit(&child)?;
             count += x;
             size += y;
         }
@@ -57,9 +56,10 @@ fn main() -> Result<(), Error> {
     let disk_mmap = ReadSlice(mmap.0);
     let disk: &dyn Read = if args.pread { &disk_pread } else { &disk_mmap };
 
-    let fs = Ext4Fs::new(disk, args.leaf_optimization)?;
-    let dir = fs.root()?;
-    let (count, size) = visit(&dir, &fs)?;
+    //let fs1 = ap_storage_ext4_ro::Ext4Fs::new(disk, args.leaf_optimization)?;
+    let fs1 = ap_storage_vfat_ro::FatFs::new(disk, 0)?;
+    let dir = fs1.root()?;
+    let (count, size) = visit(&dir)?;
     println!("{} {} {}", args.file, count, size);
     Ok(())
 }

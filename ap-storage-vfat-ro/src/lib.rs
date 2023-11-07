@@ -2,7 +2,7 @@
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
-use ap_storage::{Error, Offset, Read, ReadExt};
+use ap_storage::{Error, Offset, Read, ReadExt, file::File, FileSystem};
 use ap_storage_vfat::{BiosParameterBlock, DirectoryEntry};
 mod directory;
 mod file;
@@ -122,17 +122,6 @@ impl<'a> FatFs<'a> {
         })
     }
 
-    /// Return the root directory.
-    pub fn root(&self) -> FatFile {
-        let root_dir = DirectoryEntry {
-            attr: 0x10,
-            name: *b"..         ",
-            size: self.root_size,
-            ..Default::default()
-        };
-
-        FatFile::new(self, root_dir)
-    }
 
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
@@ -152,5 +141,18 @@ impl<'a> FatFs<'a> {
             value >>= 4;
         }
         Ok(value & self.fat_mask)
+    }
+}
+
+impl<'a> FileSystem for FatFs<'a> {
+    fn root(&self) -> Result<impl File + '_, Error> {
+        let root_dir = DirectoryEntry {
+            attr: 0x10,
+            name: *b"..         ",
+            size: self.root_size,
+            ..Default::default()
+        };
+
+        Ok(FatFile::new(self, root_dir))
     }
 }

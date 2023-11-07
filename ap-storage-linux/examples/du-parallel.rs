@@ -51,7 +51,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
         }
         worker.count += 1;
 
-        let Ok(child) = Ext4File::new(&fs, entry.id) else {
+        let Ok(child) = dir.open(entry.offset) else {
             continue;
         };
         worker.size += child.size();
