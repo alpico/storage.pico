@@ -1,6 +1,5 @@
 use ap_storage::{directory::Iterator, file::File, file::FileType, Error, FileSystem};
 use ap_storage_linux::LinuxDisk;
-use ap_storage_vfat_ro::FatFs;
 use gumdrop::Options;
 
 #[derive(Debug, Options)]
@@ -35,7 +34,8 @@ fn visit(opts: &CommandOptions, f: &impl File, path: String) -> Result<(), Error
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
     let disk = LinuxDisk::new("/dev/stdin");
-    let fs = FatFs::new(&disk, 0)?;
+    //let fs = ap_storage_vfat_ro::FatFs::new(&disk, 0)?;
+    let fs = ap_storage_json::JsonFS::new(&disk)?;
     let root = fs.root()?;
     visit(&opts, &root, "".to_string())?;
     Ok(())

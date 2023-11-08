@@ -22,7 +22,7 @@ impl ReadExt for &dyn Read {
         let mut n = 0;
         while n != buf.len() {
             match self.read_bytes(offset + n as Offset, &mut buf[n..])? {
-                0 => return Err(PartialReadError).map_err(Error::msg),
+                0 => return Err(Error::msg(PartialReadError)),
                 c => n += c,
             }
         }
