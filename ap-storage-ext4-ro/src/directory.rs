@@ -1,6 +1,6 @@
 //! Directory iterator.
-use super::{Error, Read, ReadExt, FileType};
-use ap_storage::directory::{Iterator, self};
+use super::{Error, FileType, Read, ReadExt};
+use ap_storage::directory::{self, Iterator};
 
 /// A directory iterator.
 pub struct DirIterator<'a> {
@@ -20,8 +20,8 @@ impl<'a> Iterator for DirIterator<'a> {
 
         let header: DirEntryHeader = match self.parent.read_object(self.offset) {
             Ok(x) => x,
-            Err(x) if x.is::<ap_storage::PartialReadError>() => { return Ok(None) }
-            Err(x) => { return Err(x) }
+            Err(x) if x.is::<ap_storage::PartialReadError>() => return Ok(None),
+            Err(x) => return Err(x),
         };
         let nlen = core::cmp::min(header.name_len as usize, name.len());
         extern crate std;
@@ -40,7 +40,7 @@ impl<'a> Iterator for DirIterator<'a> {
         if typ == FileType::Directory && offset <= 0x18 {
             typ = FileType::Parent;
         }
-        
+
         Ok(Some(directory::Item {
             offset,
             nlen,

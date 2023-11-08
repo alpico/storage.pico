@@ -9,7 +9,6 @@ pub struct Ext4File<'a> {
     fs: &'a Ext4Fs<'a>,
     inode: Inode,
     leaf_optimization: bool,
-    is_root: bool,
 }
 
 impl<'a> Ext4File<'a> {
@@ -20,7 +19,6 @@ impl<'a> Ext4File<'a> {
             fs,
             inode: fs.inode(nr)?,
             leaf_optimization: fs.leaf_optimization,
-            is_root: nr == 2,
         })
     }
 
@@ -101,7 +99,6 @@ impl<'a> Ext4File<'a> {
             ofs = entry.dest() * block_size;
         }
     }
-
 }
 
 impl<'a> File for Ext4File<'a> {
@@ -115,11 +112,10 @@ impl<'a> File for Ext4File<'a> {
         None
     }
 
-    fn is_root(&self) -> bool {
-        self.is_root
-    }
-    
-    fn open(&self, offset: Offset) -> Result<Self, Error> where Self:Sized {
+    fn open(&self, offset: Offset) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         if self.inode.ftype() != FileType::Directory {
             return Err(anyhow::anyhow!("not a directory"));
         }
@@ -130,9 +126,7 @@ impl<'a> File for Ext4File<'a> {
     fn size(&self) -> Offset {
         self.inode.size()
     }
-
 }
-
 
 impl<'a> Read for Ext4File<'a> {
     /// Read in the given inode.

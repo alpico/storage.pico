@@ -1,6 +1,6 @@
-use ap_storage::{Error, file::FileType, directory::Iterator, file::File, FileSystem};
+use ap_storage::{directory::Iterator, file::File, file::FileType, Error, FileSystem};
 use ap_storage_linux::LinuxDisk;
-use ap_storage_vfat_ro::{FatFs};
+use ap_storage_vfat_ro::FatFs;
 use gumdrop::Options;
 
 #[derive(Debug, Options)]
@@ -15,8 +15,7 @@ fn visit(opts: &CommandOptions, f: &impl File, path: String) -> Result<(), Error
     let mut iter = f.dir().unwrap();
     let mut name = [0u8; 256];
     while let Some(entry) = iter.next(&mut name)? {
-        if entry.typ == FileType::Unknown ||
-            !opts.all && entry.typ == FileType::Parent {
+        if entry.typ == FileType::Unknown || !opts.all && entry.typ == FileType::Parent {
             continue;
         }
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();
@@ -26,7 +25,8 @@ fn visit(opts: &CommandOptions, f: &impl File, path: String) -> Result<(), Error
             let mut child = path.clone();
             child.push('/');
             child.push_str(st);
-            visit(opts, &f.open(entry.offset).unwrap(), child)?;
+            let f = f.open(entry.offset).unwrap();
+            visit(opts, &f, child)?;
         }
     }
     Ok(())

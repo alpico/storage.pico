@@ -22,7 +22,7 @@ impl ReadExt for &dyn Read {
         let mut n = 0;
         while n != buf.len() {
             match self.read_bytes(offset + n as Offset, &mut buf[n..])? {
-                0 => return Err(PartialReadError.into()),
+                0 => return Err(PartialReadError).map_err(Error::msg),
                 c => n += c,
             }
         }
@@ -43,5 +43,7 @@ impl ReadExt for &dyn Read {
 pub struct PartialReadError;
 
 impl core::fmt::Display for PartialReadError {
-    fn fmt(&self, _: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> { todo!() }
+    fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        write!(fmt, "{:?}", self)
+    }
 }

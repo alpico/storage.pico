@@ -2,17 +2,21 @@
 
 use al_crunch_pool::{execute, Options, Sender};
 use al_mmap::Mmap;
-use ap_storage::{Error, directory::Iterator, file::{File, FileType}};
-use ap_storage_ext4_ro::{Ext4Fs, Ext4File};
+use ap_storage::{
+    directory::Iterator,
+    file::{File, FileType},
+    Error,
+};
+use ap_storage_ext4_ro::{Ext4File, Ext4Fs};
 use ap_storage_memory::ReadSlice;
-use std::rc::Rc;
 use gumdrop::Options as GumdropOptions;
+use std::rc::Rc;
 
 #[derive(Debug, GumdropOptions)]
 struct Args {
     /// Display help.
     help: bool,
-    
+
     /// File to benchmark.
     file: String,
 

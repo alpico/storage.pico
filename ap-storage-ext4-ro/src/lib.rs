@@ -12,7 +12,7 @@ pub use file::Ext4File;
 pub use inode::Inode;
 pub use superblock::SuperBlock;
 
-use ap_storage::{Error, Offset, Read, ReadExt, file::{File, FileType}, FileSystem};
+use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
 
 #[derive(Clone)]
 pub struct Ext4Fs<'a> {
@@ -78,11 +78,11 @@ impl<'a> Ext4Fs<'a> {
         self.disk
             .read_object(inode_block * self.sb.block_size() + inode_ofs)
     }
-
 }
 
-impl<'a> FileSystem for Ext4Fs<'a> {
-    fn root(&self) -> Result<impl File + '_, Error> {
+impl<'a> FileSystem<'a> for Ext4Fs<'a> {
+    type FileType = Ext4File<'a>;
+    fn root(&'a self) -> Result<Self::FileType, Error> {
         Ext4File::new(self, 2)
     }
 }

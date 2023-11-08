@@ -1,7 +1,11 @@
 //! Disk usage of the whole filesystem.
 
 use al_mmap::Mmap;
-use ap_storage::{Error, Read, directory::Iterator, file::{File, FileType}, FileSystem};
+use ap_storage::{
+    directory::Iterator,
+    file::{File, FileType},
+    Error, FileSystem, Read,
+};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options;

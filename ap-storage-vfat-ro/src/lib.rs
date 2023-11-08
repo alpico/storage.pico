@@ -2,7 +2,7 @@
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
-use ap_storage::{Error, Offset, Read, ReadExt, file::File, FileSystem};
+use ap_storage::{Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_vfat::{BiosParameterBlock, DirectoryEntry};
 mod directory;
 mod file;
@@ -122,7 +122,6 @@ impl<'a> FatFs<'a> {
         })
     }
 
-
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
         if cluster == 0 || cluster >= self.blocks {
@@ -144,8 +143,9 @@ impl<'a> FatFs<'a> {
     }
 }
 
-impl<'a> FileSystem for FatFs<'a> {
-    fn root(&self) -> Result<impl File + '_, Error> {
+impl<'a> FileSystem<'a> for FatFs<'a> {
+    type FileType = FatFile<'a>;
+    fn root(&'a self) -> Result<Self::FileType, Error> {
         let root_dir = DirectoryEntry {
             attr: 0x10,
             name: *b"..         ",

@@ -10,12 +10,12 @@ pub type Error = anyhow::Error;
 
 mod read;
 pub use read::*;
-mod write;
 pub mod directory;
 pub mod file;
+mod write;
 
-
-pub trait FileSystem {
+pub trait FileSystem<'a> {
+    type FileType;
     /// Return the root directory.
-    fn root(&self) -> Result<impl file::File + '_, Error>;
+    fn root(&'a self) -> Result<Self::FileType, Error>;
 }

@@ -1,6 +1,6 @@
 //! Support for files.
 
-use crate::{Error, Offset};
+use crate::{directory::Iterator, Error, Offset};
 
 /// Generic file-types.
 #[derive(Debug, PartialEq, Eq)]
@@ -12,11 +12,10 @@ pub enum FileType {
     Unknown,
 }
 
-
-
 pub trait File {
-    fn dir(&self) -> Option<impl crate::directory::Iterator>;
-    fn open(&self, offset: Offset) -> Result<Self, Error> where Self:Sized;
-    fn is_root(&self) -> bool;
+    fn dir(&self) -> Option<impl Iterator>;
+    fn open(&self, offset: Offset) -> Result<Self, Error>
+    where
+        Self: Sized;
     fn size(&self) -> Offset;
 }
