@@ -20,6 +20,7 @@ pub struct Inode {
     size_hi: u32,
     _4: u32,
     blocks_hi: u16,
+    _5: [u32; 2],
 }
 
 impl Inode {

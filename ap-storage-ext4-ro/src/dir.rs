@@ -38,7 +38,7 @@ impl<'a> Iterator for Dir<'a> {
         let offset = self.offset;
         self.offset += header.rec_len as u64;
         let mut typ = header.typ();
-        if typ == FileType::Directory && offset <= 0x18 {
+        if typ == FileType::Directory && offset < 0x18 {
             typ = FileType::Parent;
         }
 
