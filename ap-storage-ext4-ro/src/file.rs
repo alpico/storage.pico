@@ -13,15 +13,89 @@ pub struct Ext4File<'a> {
 }
 
 impl<'a> Ext4File<'a> {
+    /// The nnumber of adjacent blocks merged.
+    const MAX_MERGED: usize = 16;
+
     /// Open the given file by inode number.
     pub fn new(fs: &'a Ext4Fs, nr: u64) -> Result<Self, Error> {
+        let inode = fs.inode(nr)?;
         Ok(Self {
             block_size: fs.sb.block_size(),
             fs,
-            inode: fs.inode(nr)?,
+            inode,
             leaf_optimization: fs.leaf_optimization,
             nr,
         })
+    }
+
+    /// Search in the (indirect) blocks for the right block.
+    ///
+    /// Returns the physical block number and the number of continous blocks.
+    /// A zero block number means a hole in the file.
+    fn search_block(&self, mut blk: u64, block_size: u64) -> Result<(u64, u64), Error> {
+        let count_contigous = |v: &[u32]| {
+            let mut cnt = 1;
+            let start = v[0] as u64;
+            while cnt < v.len() {
+                if start != 0 && (self.inode.blocks[cnt] as u64) != start + cnt as u64
+                    || start == 0 && self.inode.blocks[cnt] != 0
+                {
+                    break;
+                }
+                cnt += 1;
+            }
+            cnt
+        };
+
+        if blk < 12 {
+            let start = self.inode.blocks[blk as usize] as u64;
+            let cnt = count_contigous(&self.inode.blocks[blk as usize..12]);
+            return Ok((start, cnt as u64));
+        }
+        blk -= 12;
+        let log_numbers_per_block = block_size.ilog2() as usize - 2;
+        let index_at_level = |blk: u64, level: usize| {
+            (blk >> ((level - 1) * log_numbers_per_block)) & ((1 << log_numbers_per_block) - 1)
+        };
+
+        // find required level and adjust blk accordingly
+        let mut level = 1usize;
+        while level < 4 {
+            if blk >> (level * log_numbers_per_block) == 0 {
+                break;
+            }
+            blk -= 1 << (level * log_numbers_per_block);
+            level += 1;
+        }
+
+        // follow level indirections
+        let mut res = self.inode.blocks[11 + level];
+        let mut cnt = 1;
+        while level > 0 && res != 0 {
+            let index = index_at_level(blk, level);
+            if level != 1 || (index + Self::MAX_MERGED as u64) >> log_numbers_per_block > 0 {
+                res = self
+                    .fs
+                    .disk
+                    .read_object(res as u64 * block_size + index * 4)?;
+            } else {
+                let blocks: [u32; Ext4File::MAX_MERGED] = self
+                    .fs
+                    .disk
+                    .read_object(res as u64 * block_size + index * 4)?;
+                res = blocks[0];
+                cnt = count_contigous(&blocks);
+            }
+            level -= 1
+        }
+
+        // huge gap?
+        let mut cnt = cnt as u64;
+        if level > 0 {
+            let index = index_at_level(blk, level);
+            cnt = ((1 << log_numbers_per_block) - index) << ((level - 1) * log_numbers_per_block);
+        }
+        Ok((res as u64, cnt))
     }
 
     /// Get an extent object at the certain disk offset.
@@ -159,7 +233,7 @@ impl<'a> Read for Ext4File<'a> {
             if self.inode.extent().is_some() {
                 self.search_extent(block_in_file, self.block_size)?
             } else {
-                todo!("original blocks");
+                self.search_block(block_in_file, self.block_size)?
             }
         };
 

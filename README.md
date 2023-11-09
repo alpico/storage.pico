@@ -6,8 +6,6 @@ The alpico storage stack.
 
 - vfat
   - [ ] long filename
-- ext4
-  - [ ] old-style blocks
 - [ ] metadata per file
   - [x] size
   - [x] id

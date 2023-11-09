@@ -61,8 +61,8 @@ fn main() -> Result<(), Error> {
     let disk_mmap = ReadSlice(mmap.0);
     let disk: &dyn Read = if opts.pread { &disk_pread } else { &disk_mmap };
 
-    //let fs = ap_storage_ext4_ro::Ext4Fs::new(disk, opts.leaf_optimization)?;
-    let fs = ap_storage_vfat_ro::VFatFS::new(disk, 0)?;
+    let fs = ap_storage_ext4_ro::Ext4Fs::new(disk, opts.leaf_optimization)?;
+    //let fs = ap_storage_vfat_ro::VFatFS::new(disk, 0)?;
     let dir = fs.root()?.lookup_path(opts.start.as_bytes())?;
     let (count, size) = visit(&dir)?;
     println!("{}\t{}\t{}", opts.start, count, size);

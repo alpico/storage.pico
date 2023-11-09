@@ -15,14 +15,14 @@ pub struct SuperBlock {
     _4: [u32; 3],
     pub magic: u16,
     _5: [u16; 15],
-    _inode_size: u16,
+    inode_size: u16,
     _6: [u16; 3],
     pub feature_incompat: u32,
     pub feature_ro_compat: u32,
     _7: [u8; 0x96],
-    _desc_size: u16,
+    desc_size: u16,
     _8: u32,
-    _first_meta_bg: u32,
+    first_meta_bg: u32,
 }
 
 impl SuperBlock {
@@ -33,11 +33,7 @@ impl SuperBlock {
 
     /// The inode_size in bytes.
     pub fn inode_size(&self) -> u64 {
-        if self.feature_ro_compat & 0x40 == 0 {
-            128
-        } else {
-            self._inode_size as u64
-        }
+        self.inode_size as u64
     }
 
     /// The group descriptor size.
@@ -46,7 +42,7 @@ impl SuperBlock {
         if self.feature_incompat & 0x80 == 0 {
             32
         } else {
-            self._desc_size as u64
+            self.desc_size as u64
         }
     }
 
@@ -55,7 +51,7 @@ impl SuperBlock {
         if self.feature_incompat & 0x10 == 0 {
             !0
         } else {
-            self._first_meta_bg as u64
+            self.first_meta_bg as u64
         }
     }
 
