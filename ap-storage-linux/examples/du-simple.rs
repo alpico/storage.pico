@@ -11,7 +11,7 @@ use ap_storage_memory::ReadSlice;
 use gumdrop::Options;
 
 #[derive(Debug, Options)]
-struct Args {
+struct CommandOptions {
     /// Print the help message.
     help: bool,
 
@@ -26,6 +26,10 @@ struct Args {
 
     /// Leaf optimization
     leaf_optimization: bool,
+
+    /// Start directory.
+    #[options(default = "/")]
+    start: String,
 }
 
 fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
@@ -54,16 +58,16 @@ fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
 }
 
 fn main() -> Result<(), Error> {
-    let args = Args::parse_args_default_or_exit();
-    let disk_pread = LinuxDisk::new(&args.file);
-    let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
+    let opts = CommandOptions::parse_args_default_or_exit();
+    let disk_pread = LinuxDisk::new(&opts.file);
+    let mmap = Mmap::new(&opts.file, !opts.no_direct, 0, 0)?;
     let disk_mmap = ReadSlice(mmap.0);
-    let disk: &dyn Read = if args.pread { &disk_pread } else { &disk_mmap };
+    let disk: &dyn Read = if opts.pread { &disk_pread } else { &disk_mmap };
 
-    //let fs1 = ap_storage_ext4_ro::Ext4Fs::new(disk, args.leaf_optimization)?;
-    let fs1 = ap_storage_vfat_ro::VFatFS::new(disk, 0)?;
-    let dir = fs1.root()?;
+    //let fs = ap_storage_ext4_ro::Ext4Fs::new(disk, opts.leaf_optimization)?;
+    let fs = ap_storage_vfat_ro::VFatFS::new(disk, 0)?;
+    let dir = fs.root()?.lookup_path(opts.start.as_bytes())?;
     let (count, size) = visit(&dir)?;
-    println!("{} {} {}", args.file, count, size);
+    println!("{}\t{}\t{}\t{}", opts.file, opts.start, count, size);
     Ok(())
 }

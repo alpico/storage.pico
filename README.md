@@ -4,18 +4,19 @@ The alpico storage stack.
 
 ## Todo
 
-- [x] vfat driver
-- [x] stablize file abstraction
-- [x] in-memory cache
-- [] metadata per file
+- vfat
+  - [ ] long filename
+- ext4
+  - [ ] old-style blocks
+- [ ] metadata per file
   - [x] size
-  - [] ftype
-  - [] mtime
-- [] lookup
-- [] common tools
+  - [x] id
+  - [ ] ftype
+  - [ ] mtime
+- [ ] common tools
    - [x] du-simple
    - [x] du-parallel
-   - [] find
-   - [] cat
-   - [] ls-l
+   - [x] find
+   - [ ] cat
+   - [ ] ls-l
  

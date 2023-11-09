@@ -37,6 +37,6 @@ impl JsonFS {
 impl<'a> FileSystem<'a> for JsonFS {
     type FileType = file::JsonFile<'a>;
     fn root(&'a self) -> Result<Self::FileType, Error> {
-        Ok(file::JsonFile { value: &self.root })
+        Ok(file::JsonFile::new(&self.root, "/"))
     }
 }

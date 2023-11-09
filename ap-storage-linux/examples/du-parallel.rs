@@ -5,7 +5,7 @@ use al_mmap::Mmap;
 use ap_storage::{
     directory::Iterator,
     file::{File, FileType},
-    Error,
+    Error, FileSystem,
 };
 use ap_storage_ext4_ro::{Ext4File, Ext4Fs};
 use ap_storage_memory::ReadSlice;
@@ -13,7 +13,7 @@ use gumdrop::Options as GumdropOptions;
 use std::rc::Rc;
 
 #[derive(Debug, GumdropOptions)]
-struct Args {
+struct CommandOptions {
     /// Display help.
     help: bool,
 
@@ -36,6 +36,10 @@ struct Args {
     /// Number of repeats.
     #[options(default = "1")]
     repeat: usize,
+
+    /// Start directory.
+    #[options(default = "/")]
+    start: String,
 }
 
 pub struct WorkerState {
@@ -70,23 +74,23 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
 }
 
 fn main() -> Result<(), Error> {
-    let args = Args::parse_args_default_or_exit();
-    let mmap = Mmap::new(&args.file, !args.no_direct, 0, 0)?;
+    let opts = CommandOptions::parse_args_default_or_exit();
+    let mmap = Mmap::new(&opts.file, !opts.no_direct, 0, 0)?;
     let disk = ReadSlice(mmap.0);
     let disk: &(dyn ap_storage::Read + Sync) = &disk;
 
     let options = Options::default()
         .one_is_zero()
         .io_bound()
-        .threads(args.threads)
-        .slots(args.slots);
+        .threads(opts.threads)
+        .slots(opts.slots);
 
     // a function to produce the state for every worker
     let make_state = |_| {
         WorkerState {
             // XXX we don't handle the lifetimes correctly
             fs: Rc::new(
-                Ext4Fs::new(unsafe { std::mem::transmute(disk) }, args.leaf_optimization).unwrap(),
+                Ext4Fs::new(unsafe { std::mem::transmute(disk) }, opts.leaf_optimization).unwrap(),
             ),
             size: 0,
             count: 0,
@@ -94,14 +98,19 @@ fn main() -> Result<(), Error> {
     };
 
     // the bounded Job queue
-    for _i in 0..args.repeat {
+    for _i in 0..opts.repeat {
         let state = execute(
             options.clone(),
             make_state,
             |state| (state.count, state.size),
             |sender| {
                 let mut state = make_state(0);
-                visit(sender, 2, &mut state);
+                let root = state.fs.root().unwrap();
+                let child = root
+                    .lookup_path(opts.start.as_bytes())
+                    .expect("start directory not found");
+
+                visit(sender, child.id(), &mut state);
                 (state.count, state.size)
             },
             |mut x, y| {
@@ -110,7 +119,7 @@ fn main() -> Result<(), Error> {
                 x
             },
         );
-        println!("{} {} {}", args.file, state.0, state.1);
+        println!("{}\t{}\t{}", opts.file, state.0, state.1);
     }
     Ok(())
 }

@@ -9,6 +9,7 @@ pub struct Ext4File<'a> {
     fs: &'a Ext4Fs<'a>,
     inode: Inode,
     leaf_optimization: bool,
+    nr: u64,
 }
 
 impl<'a> Ext4File<'a> {
@@ -19,11 +20,8 @@ impl<'a> Ext4File<'a> {
             fs,
             inode: fs.inode(nr)?,
             leaf_optimization: fs.leaf_optimization,
+            nr,
         })
-    }
-
-    pub fn size(&self) -> u64 {
-        self.inode.size()
     }
 
     /// Get an extent object at the certain disk offset.
@@ -125,6 +123,10 @@ impl<'a> File for Ext4File<'a> {
 
     fn size(&self) -> Offset {
         self.inode.size()
+    }
+
+    fn id(&self) -> u64 {
+        self.nr
     }
 }
 

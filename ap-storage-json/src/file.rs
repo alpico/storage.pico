@@ -1,7 +1,16 @@
 use super::*;
 
 pub struct JsonFile<'a> {
-    pub value: &'a serde_json::Value,
+    value: &'a serde_json::Value,
+    id: u64,
+}
+impl<'a> JsonFile<'a> {
+    pub fn new(value: &'a serde_json::Value, name: &str) -> Self {
+        Self {
+            value,
+            id: name.as_ptr() as u64,
+        }
+    }
 }
 
 impl File for JsonFile<'_> {
@@ -26,14 +35,28 @@ impl File for JsonFile<'_> {
             .keys()
             .nth(offset as usize)
             .ok_or(anyhow::anyhow!("eof"))?;
-        Ok(JsonFile {
-            value: &children[child],
-        })
+        Ok(JsonFile::new(&children[child], child))
     }
     fn size(&self) -> Offset {
         serde_json::to_string(self.value)
             .map(|x| x.len())
             .unwrap_or_default() as Offset
+    }
+    fn id(&self) -> u64 {
+        self.id
+    }
+    /// A more efficient lookup.
+    fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
+        let name = core::str::from_utf8(name)?;
+        dbg!(&name);
+        let children = self
+            .value
+            .as_object()
+            .ok_or(anyhow::anyhow!("not an object"))?;
+        let Some(value) = children.get(name) else {
+            return Ok(None);
+        };
+        Ok(Some(JsonFile::new(value, name)))
     }
 }
 
