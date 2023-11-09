@@ -12,7 +12,7 @@ pub enum FileType {
     Unknown,
 }
 
-pub trait File {
+pub trait File: crate::Read {
     fn dir(&self) -> Option<impl Iterator>;
     fn open(&self, offset: Offset) -> Result<Self, Error>
     where

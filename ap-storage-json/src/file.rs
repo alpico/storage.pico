@@ -3,6 +3,7 @@ use super::*;
 pub struct JsonFile<'a> {
     pub value: &'a serde_json::Value,
 }
+
 impl File for JsonFile<'_> {
     fn dir(&self) -> Option<impl directory::Iterator> {
         let children = self.value.as_object()?;
@@ -33,5 +34,19 @@ impl File for JsonFile<'_> {
         serde_json::to_string(self.value)
             .map(|x| x.len())
             .unwrap_or_default() as Offset
+    }
+}
+
+impl Read for JsonFile<'_> {
+    fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
+        let v = serde_json::to_string(self.value).map_err(Error::msg)?;
+        let v = v.as_bytes();
+        if offset >= v.len() as Offset {
+            return Ok(0);
+        }
+        let ofs = offset as usize;
+        let maxn = core::cmp::min(v.len() - ofs, buf.len());
+        buf.copy_from_slice(&v[ofs..ofs + maxn]);
+        Ok(maxn)
     }
 }
