@@ -1,26 +1,26 @@
 //! File in VFAT
 
-use super::{DirIterator, DirectoryEntry, FatFs};
-use ap_storage::{directory::Iterator, file::File, Error, Offset, Read, ReadExt};
+use super::{dir::Dir, DirectoryEntry, VFatFS};
+use ap_storage::{directory::Iterator, Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
-pub struct FatFile<'a> {
-    pub(crate) fs: &'a FatFs<'a>,
+pub struct File<'a> {
+    pub(crate) fs: &'a VFatFS<'a>,
     pub(crate) inode: DirectoryEntry,
-    cache: RefCell<FatFileCache>,
+    cache: RefCell<FileCache>,
 }
 
 /// The in-file cache to speedup linear reads.
 #[derive(Debug, Default, Clone)]
-struct FatFileCache {
+struct FileCache {
     block: u32,
     cluster: u32,
 }
 
-impl<'a> FatFile<'a> {
+impl<'a> File<'a> {
     /// Creating a file from a directory entry.
-    pub(crate) fn new(fs: &'a FatFs<'a>, inode: DirectoryEntry) -> Self {
+    pub(crate) fn new(fs: &'a VFatFS<'a>, inode: DirectoryEntry) -> Self {
         Self {
             inode,
             fs,
@@ -33,7 +33,7 @@ impl<'a> FatFile<'a> {
     }
 }
 
-impl<'a> File for FatFile<'a> {
+impl<'a> ap_storage::file::File for File<'a> {
     /// Open a file relative to the given directory.
     fn open(&self, mut offset: Offset) -> Result<Self, Error> {
         if !self.inode.is_dir() {
@@ -53,7 +53,7 @@ impl<'a> File for FatFile<'a> {
     /// Return a directory iterator.
     fn dir(&self) -> Option<impl Iterator> {
         if self.inode.is_dir() {
-            return Some(DirIterator::new(self));
+            return Some(Dir::new(self));
         }
         None
     }
@@ -63,7 +63,7 @@ impl<'a> File for FatFile<'a> {
     }
 }
 
-impl Read for FatFile<'_> {
+impl Read for File<'_> {
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         let size = self.inode.size();
         if offset >= size.into() {

@@ -1,20 +1,21 @@
 //! Directory iterator.
 use super::{Error, FileType, Read, ReadExt};
 use ap_storage::directory::{self, Iterator};
+use ap_storage_ext4::dir::DirEntryHeader;
 
 /// A directory iterator.
-pub struct DirIterator<'a> {
+pub struct Dir<'a> {
     parent: &'a dyn Read,
     offset: u64,
 }
 
-impl<'a> DirIterator<'a> {
+impl<'a> Dir<'a> {
     pub fn new(parent: &'a dyn Read) -> Self {
         Self { parent, offset: 0 }
     }
 }
 
-impl<'a> Iterator for DirIterator<'a> {
+impl<'a> Iterator for Dir<'a> {
     fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
         const O: usize = core::mem::size_of::<DirEntryHeader>();
 
@@ -47,28 +48,5 @@ impl<'a> Iterator for DirIterator<'a> {
             typ,
             id: header.inode(),
         }))
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct DirEntryHeader {
-    inode: u32,
-    rec_len: u16,
-    name_len: u8,
-    file_type: u8,
-}
-
-impl DirEntryHeader {
-    pub fn typ(&self) -> FileType {
-        match self.file_type {
-            1 => FileType::File,
-            2 => FileType::Directory,
-            7 => FileType::SymLink,
-            _ => FileType::Unknown,
-        }
-    }
-    pub fn inode(&self) -> u64 {
-        self.inode as u64
     }
 }

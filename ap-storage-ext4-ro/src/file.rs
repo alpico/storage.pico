@@ -1,8 +1,8 @@
 //! File support.
 
-use super::{DirIterator, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
-use crate::directory::DirEntryHeader;
+use super::{Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
 use ap_storage::{directory::Iterator, file::File};
+use ap_storage_ext4::dir::DirEntryHeader;
 
 pub struct Ext4File<'a> {
     block_size: u64,
@@ -107,7 +107,7 @@ impl<'a> File for Ext4File<'a> {
         if self.inode.ftype() == FileType::Directory
             && (self.inode.version != 1 || !self.leaf_optimization)
         {
-            return Some(DirIterator::new(self));
+            return Some(Dir::new(self));
         }
         None
     }

@@ -4,14 +4,11 @@
 
 use ap_storage::{Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_vfat::{BiosParameterBlock, DirectoryEntry};
-mod directory;
+mod dir;
 mod file;
 
-pub use directory::DirIterator;
-pub use file::FatFile;
-
 #[derive(Clone)]
-pub struct FatFs<'a> {
+pub struct VFatFS<'a> {
     disk: &'a dyn Read,
     /// bytes per cluster.
     block_size: u32,
@@ -33,17 +30,17 @@ pub struct FatFs<'a> {
     uuid: u32,
 }
 
-impl core::fmt::Debug for FatFs<'_> {
+impl core::fmt::Debug for VFatFS<'_> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             fmt,
-            "FatFs{}(uuid {:x?}, bs {})",
+            "VFatFS{}(uuid {:x?}, bs {})",
             self.fat_type, self.uuid, self.block_size
         )
     }
 }
 
-impl<'a> FatFs<'a> {
+impl<'a> VFatFS<'a> {
     /// Mount the filesystem.
     pub fn new(disk: &'a dyn Read, sb_offset: u64) -> Result<Self, Error> {
         let buf: [u8; 512] = disk.read_object(sb_offset)?;
@@ -143,8 +140,8 @@ impl<'a> FatFs<'a> {
     }
 }
 
-impl<'a> FileSystem<'a> for FatFs<'a> {
-    type FileType = FatFile<'a>;
+impl<'a> FileSystem<'a> for VFatFS<'a> {
+    type FileType = file::File<'a>;
     fn root(&'a self) -> Result<Self::FileType, Error> {
         let root_dir = DirectoryEntry {
             attr: 0x10,
@@ -153,6 +150,6 @@ impl<'a> FileSystem<'a> for FatFs<'a> {
             ..Default::default()
         };
 
-        Ok(FatFile::new(self, root_dir))
+        Ok(file::File::new(self, root_dir))
     }
 }

@@ -34,7 +34,7 @@ fn visit(opts: &CommandOptions, f: &impl File, path: String) -> Result<(), Error
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
     let disk = LinuxDisk::new("/dev/stdin");
-    //let fs = ap_storage_vfat_ro::FatFs::new(&disk, 0)?;
+    //let fs = ap_storage_vfat_ro::VFatFS::new(&disk, 0)?;
     let fs = ap_storage_json::JsonFS::new(&disk)?;
     let root = fs.root()?;
     visit(&opts, &root, "".to_string())?;

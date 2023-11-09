@@ -2,17 +2,14 @@
 
 #![no_std]
 
-mod directory;
+mod dir;
 mod file;
-mod inode;
-mod superblock;
 
-pub use directory::DirIterator;
+pub use dir::Dir;
 pub use file::Ext4File;
-pub use inode::Inode;
-pub use superblock::SuperBlock;
 
 use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
+use ap_storage_ext4::{inode::Inode, superblock::SuperBlock};
 
 #[derive(Clone)]
 pub struct Ext4Fs<'a> {

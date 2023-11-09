@@ -1,6 +1,6 @@
 //! Sparse inode definition.
 
-use super::FileType;
+use ap_storage::file::FileType;
 
 /// Sparse inode definition.
 #[derive(Debug, Clone, Copy)]
@@ -14,8 +14,8 @@ pub struct Inode {
     nlinks: u16,
     blocks_lo: u32,
     flags: u32,
-    pub(crate) version: u32,
-    pub(crate) blocks: [u32; 15],
+    pub version: u32,
+    pub blocks: [u32; 15],
     _3: [u32; 2],
     size_hi: u32,
     _4: u32,

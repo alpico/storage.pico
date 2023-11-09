@@ -1,7 +1,11 @@
-use ap_storage::{FileSystem, Error, file::{FileType, File}, Offset, directory, Read};
+use ap_storage::{
+    directory,
+    file::{File, FileType},
+    Error, FileSystem, Offset, Read,
+};
 
-mod file;
 mod dir;
+mod file;
 
 pub struct JsonFS {
     root: serde_json::Value,
@@ -24,11 +28,9 @@ impl JsonFS {
         // convert to a Value
         let root: serde_json::Value = serde_json::from_slice(&data).map_err(Error::msg)?;
         if !root.is_object() {
-            return Err(anyhow::anyhow!("not an object"))
+            return Err(anyhow::anyhow!("not an object"));
         }
-        Ok(Self {
-            root,
-        })
+        Ok(Self { root })
     }
 }
 
@@ -38,6 +40,3 @@ impl<'a> FileSystem<'a> for JsonFS {
         Ok(file::JsonFile { value: &self.root })
     }
 }
-
-
-

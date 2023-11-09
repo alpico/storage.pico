@@ -61,7 +61,7 @@ fn main() -> Result<(), Error> {
     let disk: &dyn Read = if args.pread { &disk_pread } else { &disk_mmap };
 
     //let fs1 = ap_storage_ext4_ro::Ext4Fs::new(disk, args.leaf_optimization)?;
-    let fs1 = ap_storage_vfat_ro::FatFs::new(disk, 0)?;
+    let fs1 = ap_storage_vfat_ro::VFatFS::new(disk, 0)?;
     let dir = fs1.root()?;
     let (count, size) = visit(&dir)?;
     println!("{} {} {}", args.file, count, size);

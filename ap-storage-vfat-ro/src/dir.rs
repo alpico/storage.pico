@@ -1,24 +1,20 @@
 //! Directory iteration for vfat.
 
-use super::{DirectoryEntry, Error, FatFile, Offset};
-use ap_storage::{
-    directory::{self, Iterator},
-    file::FileType,
-    Read, ReadExt,
-};
+use super::{file::File, DirectoryEntry, Error, Offset};
+use ap_storage::{directory, file::FileType, Read, ReadExt};
 
-pub struct DirIterator<'a> {
-    file: &'a FatFile<'a>,
+pub struct Dir<'a> {
+    file: &'a File<'a>,
     offset: Offset,
 }
 
-impl<'a> DirIterator<'a> {
-    pub(crate) fn new(file: &'a FatFile<'a>) -> Self {
+impl<'a> Dir<'a> {
+    pub(crate) fn new(file: &'a File<'a>) -> Self {
         Self { file, offset: 0 }
     }
 }
 
-impl<'a> Iterator for DirIterator<'a> {
+impl<'a> directory::Iterator for Dir<'a> {
     fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
         let entry: DirectoryEntry = if !self.file.is_root() {
             (self.file as &dyn Read).read_object(self.offset * 32)?
