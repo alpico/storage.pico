@@ -10,8 +10,11 @@ struct CommandOptions {
     /// Show all entries.
     all: bool,
 
-    /// verbose listing.
+    /// Show the directory-entries as well.
     verbose: bool,
+
+    /// List the file attributes.
+    long: bool,
 
     /// Start directory.
     #[options(default = "/")]
@@ -24,14 +27,18 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String) -> Result<(), Erro
     };
     let mut name = [0u8; 256];
     while let Some(entry) = iter.next(&mut name)? {
-        if !opts.all && (entry.typ == FileType::Unknown || entry.typ == FileType::Parent) {
+        if entry.typ == FileType::Unknown || (!opts.all && entry.typ == FileType::Parent) {
             continue;
         }
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();
-        match opts.verbose {
-            false => println!("{path}/{st}"),
-            true => println!("{path}/{st}\t{entry:?}"),
+        if opts.long {
+            let f = f.open(entry.offset).unwrap();
+            print!("{}\t{}\t", f.id(), f.size());
         }
+        if opts.verbose {
+            print!("{entry:?}\t")
+        }
+        println!("{path}/{st}");
 
         if entry.typ == FileType::Directory {
             let mut child = path.clone();
