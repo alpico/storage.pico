@@ -15,9 +15,6 @@ struct CommandOptions {
     /// Print the help message.
     help: bool,
 
-    /// File to benchmark.
-    file: String,
-
     /// Direct acccess.
     no_direct: bool,
 
@@ -59,8 +56,8 @@ fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
 
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
-    let disk_pread = LinuxDisk::new(&opts.file);
-    let mmap = Mmap::new(&opts.file, !opts.no_direct, 0, 0)?;
+    let disk_pread = LinuxDisk::new(&"/dev/stdin");
+    let mmap = Mmap::new(&"/dev/stdin", !opts.no_direct, 0, 0)?;
     let disk_mmap = ReadSlice(mmap.0);
     let disk: &dyn Read = if opts.pread { &disk_pread } else { &disk_mmap };
 
@@ -68,6 +65,6 @@ fn main() -> Result<(), Error> {
     let fs = ap_storage_vfat_ro::VFatFS::new(disk, 0)?;
     let dir = fs.root()?.lookup_path(opts.start.as_bytes())?;
     let (count, size) = visit(&dir)?;
-    println!("{}\t{}\t{}\t{}", opts.file, opts.start, count, size);
+    println!("{}\t{}\t{}", opts.start, count, size);
     Ok(())
 }
