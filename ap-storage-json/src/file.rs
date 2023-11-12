@@ -13,8 +13,9 @@ impl<'a> JsonFile<'a> {
     }
 }
 
-impl File for JsonFile<'_> {
-    fn dir(&self) -> Option<impl directory::Iterator> {
+impl<'a> File for JsonFile<'a> where Self: 'a {
+    type Dir<'c> = crate::dir::JsonDir<'c> where Self: 'c;
+    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>> {
         let children = self.value.as_object()?;
         Some(crate::dir::JsonDir {
             keys: children.keys(),
@@ -47,8 +48,7 @@ impl File for JsonFile<'_> {
     }
     /// A more efficient lookup.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
-        let name = core::str::from_utf8(name)?;
-        dbg!(&name);
+        let name = core::str::from_utf8(name).map_err(Error::msg)?;
         let children = self
             .value
             .as_object()
@@ -69,7 +69,7 @@ impl Read for JsonFile<'_> {
         }
         let ofs = offset as usize;
         let maxn = core::cmp::min(v.len() - ofs, buf.len());
-        buf.copy_from_slice(&v[ofs..ofs + maxn]);
+        buf[..maxn].copy_from_slice(&v[ofs..ofs + maxn]);
         Ok(maxn)
     }
 }

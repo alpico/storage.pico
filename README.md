@@ -22,7 +22,8 @@ The alpico storage stack.
 
 
 ## Todo
-- [ ] unified FS
+- [x] unified FS
+  - [ ] introduce derive macro to specialize the implementation
 - [ ] metadata per file
   - [x] size
   - [x] id

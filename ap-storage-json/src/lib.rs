@@ -12,7 +12,7 @@ pub struct JsonFS {
 }
 
 impl JsonFS {
-    pub fn new(disk: &impl Read) -> Result<Self, Error> {
+    pub fn new(disk: &dyn Read) -> Result<Self, Error> {
         // Fill the buffer.
         let mut data = vec![0; 4096];
         let mut ofs = 0;

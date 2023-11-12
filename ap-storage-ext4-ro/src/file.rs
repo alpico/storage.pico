@@ -1,7 +1,7 @@
 //! File support.
 
 use super::{Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
-use ap_storage::{directory::Iterator, file::File};
+use ap_storage::file::File;
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
@@ -205,7 +205,8 @@ impl<'a> Ext4File<'a> {
 
 impl<'a> File for Ext4File<'a> {
     /// Return a iterator if this is a directory.
-    fn dir(&self) -> Option<impl Iterator> {
+    type Dir<'c> = Dir<'c> where Self: 'c;
+    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>> {
         if self.inode.ftype() == FileType::Directory
             && (self.inode.version != 1 || !self.leaf_optimization)
         {

@@ -1,7 +1,7 @@
 //! File in VFAT
 
 use super::{dir::Dir, DirectoryEntry, VFatFS};
-use ap_storage::{directory::Iterator, Error, Offset, Read, ReadExt};
+use ap_storage::{Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -34,6 +34,14 @@ impl<'a> File<'a> {
 }
 
 impl<'a> ap_storage::file::File for File<'a> {
+    type Dir<'c> = Dir<'c> where Self: 'c;
+    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>> {
+        if self.inode.is_dir() {
+            return Some(Dir::new(self));
+        }
+        None
+    }
+
     /// Open a file relative to the given directory.
     fn open(&self, mut offset: Offset) -> Result<Self, Error> {
         if !self.inode.is_dir() {
@@ -50,13 +58,6 @@ impl<'a> ap_storage::file::File for File<'a> {
         Ok(Self::new(self.fs, entry))
     }
 
-    /// Return a directory iterator.
-    fn dir(&self) -> Option<impl Iterator> {
-        if self.inode.is_dir() {
-            return Some(Dir::new(self));
-        }
-        None
-    }
     fn size(&self) -> Offset {
         let res = self.inode.size().into();
         if !self.inode.is_dir() || res < 2 << 20 {

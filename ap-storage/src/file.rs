@@ -13,8 +13,9 @@ pub enum FileType {
 }
 
 pub trait File: crate::Read {
+    type Dir<'c>: Iterator where Self: 'c;
     /// Return a directory iterator.
-    fn dir(&self) -> Option<impl Iterator>;
+    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>>;
 
     /// Open children as offset from this directory.
     fn open(&self, offset: Offset) -> Result<Self, Error>
