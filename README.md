@@ -22,13 +22,10 @@ The alpico storage stack.
 
 
 ## Todo
-- unified FS
-- vfat
-  - [ ] long filename
+- [ ] unified FS
 - [ ] metadata per file
   - [x] size
   - [x] id
   - [ ] ftype
   - [ ] mtime
-
- 
+  - [ ] btime

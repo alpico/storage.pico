@@ -2,6 +2,9 @@
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
+mod long_entry;
+pub use long_entry::LongEntry;
+
 #[derive(Clone, Copy, Default, PartialEq)]
 #[repr(C)]
 pub struct DirectoryEntry {
@@ -64,6 +67,15 @@ impl DirectoryEntry {
             res[0] = 0xe5;
         }
         res
+    }
+
+    /// Calculate the name checksum for long-entries.
+    pub fn checksum(&self) -> u8 {
+        let mut res = self.name[0] as usize;
+        for i in 1..11 {
+            res = ((res & 0x1) << 7 | (res & 0xff) >> 1) + self.name[i] as usize;
+        }
+        (res & 0xff) as u8
     }
 }
 
