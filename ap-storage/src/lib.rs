@@ -13,9 +13,13 @@ pub use read::*;
 pub mod directory;
 pub mod file;
 mod write;
+pub use write::*;
 
+
+/// Hierarchical filesystem.
 pub trait FileSystem<'a> {
-    type FileType;
+    /// The type to represent files.
+    type FileType: file::File;
     /// Return the root directory.
     fn root(&'a self) -> Result<Self::FileType, Error>;
 }

@@ -5,6 +5,7 @@
 mod long_entry;
 pub use long_entry::LongEntry;
 
+/// Directory entry.
 #[derive(Clone, Copy, Default, PartialEq)]
 #[repr(C)]
 pub struct DirectoryEntry {
@@ -23,10 +24,12 @@ pub struct DirectoryEntry {
 }
 
 impl DirectoryEntry {
+    /// Is this entry a directory?
     pub fn is_dir(&self) -> bool {
         self.attr & 0x10 != 0
     }
 
+    /// Return the cluster number.
     pub fn cluster(&self) -> u32 {
         // Volume ID?
         if self.attr & 0x8 != 0 {
@@ -35,6 +38,7 @@ impl DirectoryEntry {
         (self.cluster_hi as u32) << 16 | self.cluster_lo as u32
     }
 
+    /// Calculate the size of the file.
     pub fn size(&self) -> u32 {
         let mut res = unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) };
         if self.is_dir() && res == 0 {
@@ -92,11 +96,12 @@ impl core::fmt::Debug for DirectoryEntry {
     }
 }
 
-/// The minimal BIOS Parameter Block as present in the first sector of the disk.
+/// The BIOS Parameter Block as present in the first sector of the disk.
 #[derive(Clone, Copy, Debug)]
 #[repr(packed)]
 pub struct BiosParameterBlock {
-    _x: [u8; 11],
+    pub jmp: [u8; 3],
+    pub oem: [u8; 8],
     pub bytes_per_sector: u16,
     pub sectors_per_cluster: u8,
     pub reserved_sectors: u16,
@@ -105,10 +110,34 @@ pub struct BiosParameterBlock {
     pub total_sectors16: u16,
     pub media: u8,
     pub fat_size16: u16,
-    _y: [u8; 8],
+    pub sectors_per_track: u16,
+    pub num_heads: u16,
+    pub hidden_sectors: u32,
     pub total_sectors32: u32,
+}
+
+/// The extension as present on fat12 and fat16 volumes.
+#[derive(Clone, Copy, Debug)]
+#[repr(packed)]
+pub struct ExtBiosParameterBlock16 {
+    pub drive: u8,
+    pub res: u8,
+    pub bootsig: u8,
+    pub volume_id: u32,
+    pub volume_label: [u8; 11],
+    pub filesys_type: [u8; 8],
+}
+
+/// The extension as present on fat32 volumes.
+#[derive(Clone, Copy, Debug)]
+#[repr(packed)]
+pub struct ExtBiosParameterBlock32 {
     pub fat_size32: u32,
     pub ext_flags: u16,
-    _z: u16,
+    pub version: u16,
     pub root_cluster: u32,
+    pub fs_info: u16,
+    pub boot_sector: u16,
+    pub res: [u8; 12],
+    pub ext: ExtBiosParameterBlock16,
 }

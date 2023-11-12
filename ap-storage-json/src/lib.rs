@@ -21,6 +21,11 @@ impl JsonFS {
                 break;
             }
             ofs += n;
+            if let Err(e) = serde_json::from_slice::<serde_json::Value>(&data[..]) {
+                if !e.is_eof() {
+                    return Err(anyhow::anyhow!("invalid JSON"));
+                }
+            }
             data.resize(ofs + 4096, 0);
         }
         data.resize(ofs, 0);

@@ -34,8 +34,8 @@ impl<'a> File<'a> {
 }
 
 impl<'a> ap_storage::file::File for File<'a> {
-    type Dir<'c> = Dir<'c> where Self: 'c;
-    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>> {
+    type DirType<'c> = Dir<'c> where Self: 'c;
+    fn dir(&self) -> Option<Self::DirType<'_>> {
         if self.inode.is_dir() {
             return Some(Dir::new(self));
         }

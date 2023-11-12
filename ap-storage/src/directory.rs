@@ -3,6 +3,7 @@
 use super::Error;
 use crate::file::FileType;
 
+/// Directory entry.
 #[derive(Debug)]
 pub struct Item {
     /// The offset inside the parent. This is used to open the file relative to the parent.
@@ -17,5 +18,9 @@ pub struct Item {
 
 /// Iterator over directories.
 pub trait Iterator {
+    /// Return the next entry in this directory.
+    ///
+    /// Fills the name with upto `nlen` bytes.  If a shorter buffer
+    /// is given the name is truncated.
     fn next(&mut self, name: &mut [u8]) -> Result<Option<Item>, Error>;
 }

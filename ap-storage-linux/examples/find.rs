@@ -54,7 +54,8 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String) -> Result<(), Erro
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
     let disk = LinuxDisk::new("/dev/stdin");
-    let fs = ap_storage_unified::UnifiedFs::new(&disk).ok_or(anyhow::anyhow!("no filesystem found"))?;
+    let fs =
+        ap_storage_unified::UnifiedFs::new(&disk).ok_or(anyhow::anyhow!("no filesystem found"))?;
     let start = &opts.start;
     let child = fs.root()?.lookup_path(start.as_bytes())?;
     visit(&opts, &child, &"".to_string())

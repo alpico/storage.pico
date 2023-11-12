@@ -205,8 +205,8 @@ impl<'a> Ext4File<'a> {
 
 impl<'a> File for Ext4File<'a> {
     /// Return a iterator if this is a directory.
-    type Dir<'c> = Dir<'c> where Self: 'c;
-    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>> {
+    type DirType<'c> = Dir<'c> where Self: 'c;
+    fn dir(&self) -> Option<Self::DirType<'_>> {
         if self.inode.ftype() == FileType::Directory
             && (self.inode.version != 1 || !self.leaf_optimization)
         {

@@ -7,7 +7,7 @@ use ap_storage::{
     file::{File, FileType},
     Error, FileSystem,
 };
-use ap_storage_ext4_ro::{Ext4File, Ext4Fs};
+use ap_storage_ext4_ro::{file::Ext4File, Ext4Fs};
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options as GumdropOptions;
 use std::rc::Rc;

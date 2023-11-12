@@ -3,7 +3,7 @@
 #![feature(byte_slice_trim_ascii)]
 
 use ap_storage::{Error, FileSystem, Offset, Read, ReadExt};
-use ap_storage_vfat::{BiosParameterBlock, DirectoryEntry};
+use ap_storage_vfat::*;
 mod dir;
 mod file;
 
@@ -45,6 +45,8 @@ impl<'a> VFatFS<'a> {
     pub fn new(disk: &'a dyn Read, sb_offset: u64) -> Result<Self, Error> {
         let buf: [u8; 512] = disk.read_object(sb_offset)?;
         let bpb = unsafe { *(buf.as_ptr() as *const BiosParameterBlock) };
+        let ebp16 = unsafe { *(buf.as_ptr().add(36) as *const ExtBiosParameterBlock16) };
+        let ebp32 = unsafe { *(buf.as_ptr().add(36) as *const ExtBiosParameterBlock32) };
 
         // validate the super-block
         if buf[511] != 0xaa || buf[510] != 0x55 {
@@ -80,7 +82,7 @@ impl<'a> VFatFS<'a> {
         let sectors_per_cluster = bpb.sectors_per_cluster as u32;
         let mut fat_start_sector = bpb.reserved_sectors as u32;
         let root_start =
-            fat_start_sector + (bpb.num_fats as u32) * (left_or(bpb.fat_size16, bpb.fat_size32));
+            fat_start_sector + (bpb.num_fats as u32) * (left_or(bpb.fat_size16, ebp32.fat_size32));
         let data_start = (root_start + root_sectors) as Offset * sector_size as Offset;
         let clusters = (left_or(bpb.total_sectors16, bpb.total_sectors32)
             - (root_start + root_sectors))
@@ -91,18 +93,18 @@ impl<'a> VFatFS<'a> {
             _ => 32,
         };
         let fat_mask = 0x0fffffff & (!0u32 >> (32 - fat_type));
-        let uuid: u32 = unsafe {
-            core::ptr::read_unaligned(
-                buf.as_ptr().add(if fat_type == 32 { 67 } else { 39 }) as *const u32
-            )
+        let uuid = if fat_type == 32 {
+            ebp32.ext.volume_id
+        } else {
+            ebp16.volume_id
         };
 
         // check for active fat
         if fat_type == 32
-            && (bpb.ext_flags & 0x80) != 0
-            && bpb.ext_flags & 0xf < bpb.num_fats as u16
+            && (ebp32.ext_flags & 0x80) != 0
+            && ebp32.ext_flags & 0xf < bpb.num_fats as u16
         {
-            fat_start_sector += ((bpb.ext_flags & 0xf) as u32) * bpb.fat_size32
+            fat_start_sector += ((ebp32.ext_flags & 0xf) as u32) * ebp32.fat_size32
         }
 
         Ok(Self {

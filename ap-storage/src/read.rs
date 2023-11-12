@@ -2,7 +2,7 @@
 use crate::{Error, Offset};
 use core::mem::MaybeUninit;
 
-/// Trait to read from a file or disk from a certain offset.
+/// Read from a certain offset into a buffer.
 pub trait Read {
     /// Read into some byte buffer. Returning zero means EOF.
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error>;
@@ -39,6 +39,7 @@ impl ReadExt for &dyn Read {
     }
 }
 
+/// An exact read could only be partially done.
 #[derive(thiserror::Error, Debug)]
 pub struct PartialReadError;
 

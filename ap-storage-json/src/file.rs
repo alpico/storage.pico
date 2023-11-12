@@ -13,9 +13,12 @@ impl<'a> JsonFile<'a> {
     }
 }
 
-impl<'a> File for JsonFile<'a> where Self: 'a {
-    type Dir<'c> = crate::dir::JsonDir<'c> where Self: 'c;
-    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>> {
+impl<'a> File for JsonFile<'a>
+where
+    Self: 'a,
+{
+    type DirType<'c> = crate::dir::JsonDir<'c> where Self: 'c;
+    fn dir(&self) -> Option<Self::DirType<'_>> {
         let children = self.value.as_object()?;
         Some(crate::dir::JsonDir {
             keys: children.keys(),

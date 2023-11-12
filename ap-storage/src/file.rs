@@ -5,17 +5,25 @@ use crate::{directory::Iterator, Error, Offset};
 /// Generic file-types.
 #[derive(Debug, PartialEq, Eq)]
 pub enum FileType {
+    /// A plain file.
     File,
+    /// A group of directories.
     Directory,
+    /// The parent directory and the self-pointer.
     Parent,
+    /// A symbolic link.
     SymLink,
+    /// An unsupported entry.
     Unknown,
 }
 
+/// A file trait.
 pub trait File: crate::Read {
-    type Dir<'c>: Iterator where Self: 'c;
+    type DirType<'c>: Iterator
+    where
+        Self: 'c;
     /// Return a directory iterator.
-    fn dir<'b>(&'b self) -> Option<Self::Dir<'b>>;
+    fn dir(&self) -> Option<Self::DirType<'_>>;
 
     /// Open children as offset from this directory.
     fn open(&self, offset: Offset) -> Result<Self, Error>

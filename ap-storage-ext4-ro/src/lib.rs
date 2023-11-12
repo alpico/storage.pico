@@ -3,10 +3,9 @@
 #![no_std]
 
 mod dir;
-mod file;
+pub mod file;
 
-pub use dir::Dir;
-pub use file::Ext4File;
+use dir::Dir;
 
 use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_ext4::{inode::Inode, superblock::SuperBlock};
@@ -78,8 +77,8 @@ impl<'a> Ext4Fs<'a> {
 }
 
 impl<'a> FileSystem<'a> for Ext4Fs<'a> {
-    type FileType = Ext4File<'a>;
+    type FileType = file::Ext4File<'a>;
     fn root(&'a self) -> Result<Self::FileType, Error> {
-        Ext4File::new(self, 2)
+        file::Ext4File::new(self, 2)
     }
 }

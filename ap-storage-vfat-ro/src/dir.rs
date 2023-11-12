@@ -65,11 +65,9 @@ impl<'a> Dir<'a> {
     fn detect_longname(&mut self) -> Result<(DirectoryEntry, Offset), Error> {
         let mut entry = self.get_next()?;
         let mut next_offset = self.offset;
-
         let mut long_entries = 0;
         while entry.attr & 0x3f == 0xf {
             let lentry: LongEntry = unsafe { core::mem::transmute(entry) };
-
             // combine different fields into one value to simplify the valid checks
             let x = ((lentry.typ as u32) << 16) | ((lentry.ord as u32) << 8) | lentry.cksum as u32;
             if x & 0x4000 != 0 {
@@ -79,8 +77,7 @@ impl<'a> Dir<'a> {
             }
 
             // non-continous entry, to-small or to much entries
-            if (x | 0x4000) != long_entries
-                || !(0x4100..0x4000 + (21 << 8)).contains(&long_entries)
+            if (x | 0x4000) != long_entries || !(0x4100..0x4000 + (21 << 8)).contains(&long_entries)
             {
                 // signal that we skip these number of entries
                 next_offset = self.offset;
