@@ -29,3 +29,5 @@ The alpico storage stack.
   - [ ] ftype
   - [ ] mtime
   - [ ] btime
+- [ ] memory cache
+  - [ ] multiple ways

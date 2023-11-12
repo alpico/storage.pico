@@ -26,8 +26,8 @@ impl<'a> MemoryCacheImpl<'a> {
         let userdata = &mut data[..split];
 
         // initialize the metadata
-        for i in 0..pages {
-            meta[i].page_offset = !0;
+        for entry in meta.iter_mut() {
+            entry.page_offset = !0;
         }
 
         Self {

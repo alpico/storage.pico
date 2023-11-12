@@ -72,7 +72,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
 
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
-    let mmap = Mmap::new(&"/dev/stdin", !opts.no_direct, 0, 0)?;
+    let mmap = Mmap::new("/dev/stdin", !opts.no_direct, 0, 0)?;
     let disk = ReadSlice(mmap.0);
     let disk: &(dyn ap_storage::Read + Sync) = &disk;
 

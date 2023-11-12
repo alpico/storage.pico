@@ -50,8 +50,7 @@ fn main() -> Result<(), Error> {
     let start = &opts.start;
     let file = fs.root()?.lookup_path(start.as_bytes())?;
 
-    let mut buf = Vec::new();
-    buf.resize(opts.buffer, 0);
+    let mut buf = vec![0; opts.buffer];
     let mut offset = opts.skip;
     let mut stdout = std::io::stdout();
 
