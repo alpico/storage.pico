@@ -12,11 +12,9 @@ libc = "0.2.149"
 
 [dev-dependencies]
 gumdrop = "0.8.1"
-serde_json = "1.0.108"
 ap-storage-ext4-ro = { path="../ap-storage-ext4-ro" }
 ap-storage-vfat-ro = { path="../ap-storage-vfat-ro" }
 ap-storage-json = { path="../ap-storage-json" }
 ap-storage-memory = { path="../ap-storage-memory" }
-al-crunch-pool = { path="../../linux.pico/al-crunch-pool" }
-#al-crunch-pool = {git = "https://github.com/alpico/linux.pico.git" }
+al-crunch-pool = {git = "https://github.com/alpico/linux.pico.git" }
 al-mmap = { path="../../linux.pico/al-mmap" }

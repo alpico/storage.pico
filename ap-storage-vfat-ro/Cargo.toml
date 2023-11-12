@@ -9,7 +9,3 @@ edition = "2021"
 anyhow = { version = "1.0.75", default-features = false }
 ap-storage={ path = "../ap-storage"}
 ap-storage-vfat={ path = "../ap-storage-vfat"}
-
-[dev-dependencies]
-ap-storage-linux={ path = "../ap-storage-linux"}
-gumdrop = "0.8.1"
