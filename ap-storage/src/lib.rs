@@ -15,7 +15,6 @@ pub mod file;
 mod write;
 pub use write::*;
 
-
 /// Hierarchical filesystem.
 pub trait FileSystem<'a> {
     /// The type to represent files.

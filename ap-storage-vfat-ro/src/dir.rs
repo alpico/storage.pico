@@ -98,6 +98,7 @@ impl<'a> Dir<'a> {
 impl<'a> directory::Iterator for Dir<'a> {
     fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
         let (entry, next_offset) = self.detect_longname()?;
+
         // end-of-directory?
         if entry.name[0] == 0 {
             return Ok(None);

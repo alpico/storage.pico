@@ -22,10 +22,12 @@ pub struct VFatFS<'a> {
     fat_mask: u32,
     /// The start of the data area -> cluster 2.
     data_start: Offset,
-    /// The offset where the root-directory starts.
+    /// The offset where the root-region starts.
     root_start: Offset,
-    /// Virtual directory entry for the root directory.
+    /// size of the root-directory for u32
     root_size: u32,
+    /// the root cluster for fat32
+    root_cluster: u32,
     /// The uuid field.
     uuid: u32,
 }
@@ -106,17 +108,23 @@ impl<'a> VFatFS<'a> {
         {
             fat_start_sector += ((ebp32.ext_flags & 0xf) as u32) * ebp32.fat_size32
         }
+        let root_cluster = if fat_type == 32 {
+            ebp32.root_cluster
+        } else {
+            0
+        };
 
         Ok(Self {
             disk,
             block_size: sector_size * sectors_per_cluster,
             blocks: clusters,
             data_start,
-            root_start: root_start as Offset * sector_size as Offset,
             fat_type,
             fat_start: fat_start_sector as Offset * sector_size as Offset,
             fat_mask,
+            root_start: root_start as Offset * sector_size as Offset,
             root_size: root_sectors * sector_size,
+            root_cluster,
             uuid,
         })
     }

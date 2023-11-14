@@ -17,6 +17,9 @@ struct CommandOptions {
     /// The bytes to skip.
     skip: u64,
 
+    /// The bytes to skip in the disk file.
+    offset: u64,
+
     /// Maximum number of bytes to read.
     size: MaxSize,
 
@@ -43,7 +46,7 @@ impl core::str::FromStr for MaxSize {
 
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
-    let disk = LinuxDisk::new("/dev/stdin");
+    let disk = LinuxDisk::new("/dev/stdin", opts.offset);
     let fs =
         ap_storage_unified::UnifiedFs::new(&disk).ok_or(anyhow::anyhow!("no filesystem found"))?;
     let start = &opts.start;

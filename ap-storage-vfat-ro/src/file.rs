@@ -97,13 +97,16 @@ impl Read for File<'_> {
             cache.cluster = self.inode.cluster();
         }
 
-        // root-directory on
         let ofs = {
-            if cache.cluster == 0 {
+            // root-directory on fat12+16 is in its own region
+            if cache.cluster == 0 && self.fs.root_size != 0 {
                 self.fs.root_start
             } else {
-                // follow the FAT for the right block
+                if cache.cluster == 0 {
+                    cache.cluster = self.fs.root_cluster;
+                }
 
+                // follow the FAT for the right block
                 while cache.block != block {
                     cache.cluster = self.fs.follow_fat(cache.cluster)?;
 

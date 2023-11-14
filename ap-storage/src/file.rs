@@ -66,7 +66,7 @@ pub trait File: crate::Read {
                 continue;
             }
             let Some(x) = res.lookup(name)? else {
-                return Err(anyhow::anyhow!("not found"));
+                return Err(anyhow::anyhow!("file not found"));
             };
             res = x;
         }
