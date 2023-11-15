@@ -1,7 +1,7 @@
 //! Directory iteration for vfat.
 
 use super::{file::File, DirectoryEntry, Error, Offset};
-use ap_storage::{directory, file::FileType, Read, ReadExt};
+use ap_storage::{directory, meta::FileType, Read, ReadExt};
 use ap_storage_vfat::LongEntry;
 
 pub struct Dir<'a> {

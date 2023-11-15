@@ -12,6 +12,7 @@ mod read;
 pub use read::*;
 pub mod directory;
 pub mod file;
+pub mod meta;
 mod write;
 pub use write::*;
 

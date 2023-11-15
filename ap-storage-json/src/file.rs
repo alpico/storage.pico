@@ -1,4 +1,5 @@
 use super::*;
+use ap_storage::meta::{MetaData, FileType};
 
 pub struct JsonFile<'a> {
     value: &'a serde_json::Value,
@@ -41,14 +42,21 @@ where
             .ok_or(anyhow::anyhow!("eof"))?;
         Ok(JsonFile::new(&children[child], child))
     }
-    fn size(&self) -> Offset {
-        serde_json::to_string(self.value)
-            .map(|x| x.len())
-            .unwrap_or_default() as Offset
+    fn meta(&self) -> MetaData {
+        MetaData {
+            size: serde_json::to_string(self.value)
+                .map(|x| x.len())
+                .unwrap_or_default() as Offset,
+            id: self.id,
+            mtime: 0,
+            filetype: if self.value.is_object() {
+                FileType::Directory
+            } else {
+                FileType::File
+            }
+        }
     }
-    fn id(&self) -> u64 {
-        self.id
-    }
+
     /// A more efficient lookup.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
         let name = core::str::from_utf8(name).map_err(Error::msg)?;

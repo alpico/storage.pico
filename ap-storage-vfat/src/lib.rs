@@ -4,6 +4,8 @@
 
 mod long_entry;
 pub use long_entry::LongEntry;
+use ap_date::{dos_date2ts, dos_time2ts, Time};
+
 
 /// Directory entry.
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -12,13 +14,14 @@ pub struct DirectoryEntry {
     pub name: [u8; 11],
     pub attr: u8,
     pub res: u8,
-    pub btime_tenth: u8,
-    pub btime_time: u16,
-    pub btime_date: u16,
-    pub atime_date: u16,
+    /// birth time in 10 millisecond increments
+    pub btenthms: u8,
+    pub btime: u16,
+    pub bdate: u16,
+    pub adate: u16,
     pub cluster_hi: u16,
-    pub mtime_time: u16,
-    pub mtime_date: u16,
+    pub mtime: u16,
+    pub mdate: u16,
     pub cluster_lo: u16,
     pub size: u32,
 }
@@ -80,6 +83,16 @@ impl DirectoryEntry {
             res = ((res & 0x1) << 7 | (res & 0xff) >> 1) + self.name[i] as usize;
         }
         (res & 0xff) as u8
+    }
+
+    /// Return the mtime in nanoseconds since 1970.
+    pub fn mtime(&self) -> Time {
+        (dos_date2ts(self.mdate) + dos_time2ts(self.mtime)) * 1_000_000_000
+    }
+
+    /// Return the birth time in nanoseconds since 1970.
+    pub fn btime(&self) -> Time {
+        (dos_date2ts(self.bdate) + dos_time2ts(self.btime)) * 1_000_000_000 + self.btenthms as Time * 10_000_000
     }
 }
 

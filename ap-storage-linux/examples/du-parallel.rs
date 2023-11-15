@@ -4,7 +4,8 @@ use al_crunch_pool::{execute, Options, Sender};
 use al_mmap::Mmap;
 use ap_storage::{
     directory::Iterator,
-    file::{File, FileType},
+    file::File,
+    meta::FileType,
     Error, FileSystem,
 };
 use ap_storage_ext4_ro::{file::Ext4File, Ext4Fs};
@@ -59,7 +60,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
         let Ok(child) = dir.open(entry.offset) else {
             continue;
         };
-        worker.size += child.size();
+        worker.size += child.meta().size;
 
         if entry.typ == FileType::Directory {
             let sender2 = sender.clone();
@@ -107,7 +108,7 @@ fn main() -> Result<(), Error> {
                     .lookup_path(opts.start.as_bytes())
                     .expect("start directory not found");
 
-                visit(sender, child.id(), &mut state);
+                visit(sender, child.meta().id, &mut state);
                 (state.count, state.size)
             },
             |mut x, y| {

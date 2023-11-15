@@ -1,6 +1,6 @@
 //! On-disk directory entry.
 
-use ap_storage::file::FileType;
+use ap_storage::meta::FileType;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]

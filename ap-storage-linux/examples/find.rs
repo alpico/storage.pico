@@ -1,4 +1,4 @@
-use ap_storage::{directory::Iterator, file::File, file::FileType, Error, FileSystem};
+use ap_storage::{directory::Iterator, file::File, meta::FileType, Error, FileSystem};
 use ap_storage_linux::LinuxDisk;
 use gumdrop::Options;
 
@@ -39,7 +39,8 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String, depth: usize) -> R
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();
         if opts.long {
             let f = f.open(entry.offset).unwrap();
-            print!("{:16x}\t{:16x}\t", f.id(), f.size());
+            let meta = f.meta();
+            print!("{:16x}\t{:16x}\t{}\t", meta.id, meta.size, meta.mtime);
         }
         if opts.verbose {
             print!("{entry:?}\t")

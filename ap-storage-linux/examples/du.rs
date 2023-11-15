@@ -3,7 +3,8 @@
 use al_mmap::Mmap;
 use ap_storage::{
     directory::Iterator,
-    file::{File, FileType},
+    file::File,
+    meta::FileType,
     Error, FileSystem, Read,
 };
 use ap_storage_linux::LinuxDisk;
@@ -44,7 +45,7 @@ fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
 
         count += 1;
         let child = dir.open(entry.offset)?;
-        size += child.size();
+        size += child.meta().size;
         if entry.typ == FileType::Directory {
             let (x, y) = visit(&child)?;
             count += x;

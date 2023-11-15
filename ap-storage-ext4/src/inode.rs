@@ -1,6 +1,6 @@
 //! Sparse inode definition.
 
-use ap_storage::file::FileType;
+use ap_storage::meta::FileType;
 
 /// Sparse inode definition.
 #[derive(Debug, Clone, Copy)]
@@ -9,7 +9,10 @@ pub struct Inode {
     mode: u16,
     _0: u16,
     size_lo: u32,
-    _1: [u32; 4],
+    atime: u32,
+    mtime: u32,
+    ctime: u32,
+    dtime: u32,
     _2: u16,
     nlinks: u16,
     blocks_lo: u32,
@@ -21,8 +24,14 @@ pub struct Inode {
     _4: u32,
     blocks_hi: u16,
     _5: [u32; 2],
+    extra_size: u16,
+    checksum_hi: u16,
+    ctime_extra: u32,
+    mtime_extra: u32,
+    atime_extra: u32,
+    crtime: u32,
+    crtime_extra: u32,
 }
-
 impl Inode {
     /// The file type.
     pub fn ftype(&self) -> FileType {
@@ -55,6 +64,14 @@ impl Inode {
 
     pub fn nlinks(&self) -> u16 {
         self.nlinks
+    }
+
+    pub fn mtime(&self) -> i64 {
+        self.mtime as i64 * 1_000_000_000 + self.mtime_extra as i64
+    }
+
+    pub fn btime(&self) -> i64 {
+        self.crtime as i64 * 1_000_000_000 + self.crtime_extra as i64
     }
 
     /// Get the number of blocks.

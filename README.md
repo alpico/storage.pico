@@ -6,15 +6,16 @@ The alpico storage stack.
 - [x] ext4-ro
 - [x] vfat-ro
 - [x] json
+- [x] partitions
 
 ## Library
 - LinuxDisk
 - InlineCache
 - MemoryCache
 - ReadSlice
+- date
 
 ## Tools
-
 - [x] du
 - [x] du-parallel
 - [x] find
@@ -25,14 +26,12 @@ The alpico storage stack.
 - [x] unified FS
   - [ ] introduce derive macro to specialize the implementation
 - [x] partition support
-  - [x] aliases
-  - [x] recursive partitions
   - [ ] extended partitions
-- [ ] metadata per file
+- [x] metadata per file
   - [x] size
   - [x] id
-  - [ ] ftype
-  - [ ] mtime
-  - [ ] btime
+  - [x] ftype
+  - [x] mtime
+- [ ] extensible metadata
 - [ ] memory cache
   - [ ] multiple ways

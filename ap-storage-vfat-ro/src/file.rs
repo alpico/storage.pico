@@ -1,7 +1,7 @@
 //! File in VFAT
 
 use super::{dir::Dir, DirectoryEntry, VFatFS};
-use ap_storage::{Error, Offset, Read, ReadExt};
+use ap_storage::{Error, Offset, Read, ReadExt, meta::{MetaData, FileType}};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -31,6 +31,22 @@ impl<'a> File<'a> {
     pub fn is_root(&self) -> bool {
         self.inode.cluster() == 0
     }
+
+    fn size(&self) -> Offset {
+        let res = self.inode.size().into();
+        if !self.inode.is_dir() || res < 2 << 20 {
+            return res;
+        }
+        // directories do not have a valid size.  Follow the FAT to calculate the value.
+        let mut cluster = self.inode.cluster();
+        let mut res = 0;
+        while cluster < self.fs.fat_mask - 8 && res < 2 << 20 {
+            res += self.fs.block_size;
+            cluster = self.fs.follow_fat(cluster).unwrap_or(!0u32);
+        }
+        res as Offset
+    }
+
 }
 
 impl<'a> ap_storage::file::File for File<'a> {
@@ -58,23 +74,21 @@ impl<'a> ap_storage::file::File for File<'a> {
         Ok(Self::new(self.fs, entry))
     }
 
-    fn size(&self) -> Offset {
-        let res = self.inode.size().into();
-        if !self.inode.is_dir() || res < 2 << 20 {
-            return res;
-        }
-        // directories do not have a valid size.  Follow the FAT to calculate the value.
-        let mut cluster = self.inode.cluster();
-        let mut res = 0;
-        while cluster < self.fs.fat_mask - 8 && res < 2 << 20 {
-            res += self.fs.block_size;
-            cluster = self.fs.follow_fat(cluster).unwrap_or(!0u32);
-        }
-        res as Offset
-    }
 
-    fn id(&self) -> u64 {
-        self.inode.cluster() as u64
+    fn meta(&self) -> MetaData {
+        let filetype = if self.inode.attr & 0x8 != 0 || self.inode.name[0] == 0xe5 {
+            FileType::Unknown
+        } else if self.inode.is_dir() {
+            FileType::Directory
+        } else {
+            FileType::File
+        };
+        MetaData {
+            size: self.size(),
+            filetype,
+            id: self.inode.cluster() as Offset,
+            mtime: self.inode.mtime(),
+        }
     }
 }
 

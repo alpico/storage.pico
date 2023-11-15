@@ -3,7 +3,8 @@
 use crate::{file::PartitionFile, Partition};
 use ap_storage::{
     directory::{Item, Iterator},
-    file::{File, FileType},
+    file::File,
+    meta::FileType,
     Error, ReadExt,
 };
 use core::fmt::Write;

@@ -7,7 +7,7 @@ pub mod file;
 
 use dir::Dir;
 
-use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
+use ap_storage::{meta::FileType, Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_ext4::{inode::Inode, superblock::SuperBlock};
 
 #[derive(Clone)]
@@ -71,8 +71,11 @@ impl<'a> Ext4Fs<'a> {
             ((hi as u64) << 32) | lo as u64
         };
 
-        self.disk
-            .read_object(inode_block * self.sb.block_size() + inode_ofs)
+        // The inode might be smaller on disk due to backward compatiblity.  
+        let mut buf = [0u8; core::mem::size_of::<Inode>()];
+        let n = core::cmp::min(core::mem::size_of::<Inode>(), self.sb.inode_size() as usize);
+        self.disk.read_exact(inode_block * self.sb.block_size() + inode_ofs, &mut buf[..n])?;
+        Ok(unsafe { core::mem::transmute(buf) })
     }
 }
 

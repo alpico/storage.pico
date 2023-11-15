@@ -2,7 +2,7 @@
 
 #![no_std]
 
-use ap_storage::{file::File, FileSystem, Read};
+use ap_storage::{file::File, FileSystem, Read, meta::MetaData};
 use ap_storage_ext4_ro::Ext4Fs;
 use ap_storage_json::JsonFS;
 use ap_storage_partition::PartitionFS;
@@ -72,20 +72,12 @@ impl<'a> File for UnifiedFile<'a> {
             UnifiedFile::Partition(f) => UnifiedFile::Partition(f.open(offset)?),
         })
     }
-    fn size(&self) -> u64 {
+    fn meta(&self) -> MetaData {
         match self {
-            UnifiedFile::Ext4(f) => f.size(),
-            UnifiedFile::Json(f) => f.size(),
-            UnifiedFile::Vfat(f) => f.size(),
-            UnifiedFile::Partition(f) => f.size(),
-        }
-    }
-    fn id(&self) -> u64 {
-        match self {
-            UnifiedFile::Ext4(f) => f.id(),
-            UnifiedFile::Json(f) => f.id(),
-            UnifiedFile::Vfat(f) => f.id(),
-            UnifiedFile::Partition(f) => f.id(),
+            UnifiedFile::Ext4(f) => f.meta(),
+            UnifiedFile::Json(f) => f.meta(),
+            UnifiedFile::Vfat(f) => f.meta(),
+            UnifiedFile::Partition(f) => f.meta(),
         }
     }
 }

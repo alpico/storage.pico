@@ -1,21 +1,7 @@
 //! Support for files.
 
-use crate::{directory::Iterator, Error, Offset};
+use crate::{directory::Iterator, Error, Offset, meta::FileType, meta::MetaData};
 
-/// Generic file-types.
-#[derive(Debug, PartialEq, Eq)]
-pub enum FileType {
-    /// A plain file.
-    File,
-    /// A group of directories.
-    Directory,
-    /// The parent directory and the self-pointer.
-    Parent,
-    /// A symbolic link.
-    SymLink,
-    /// An unsupported entry.
-    Unknown,
-}
 
 /// A file trait.
 pub trait File: crate::Read {
@@ -30,11 +16,8 @@ pub trait File: crate::Read {
     where
         Self: Sized;
 
-    /// Get the size of this file.
-    fn size(&self) -> Offset;
-
-    /// The identity of the file.
-    fn id(&self) -> u64;
+    /// Get the metadata for this file.
+    fn meta(&self) -> MetaData;
 
     /// Lookup a single name and open the corresponding file.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error>

@@ -1,6 +1,7 @@
 use ap_storage::{
     directory,
-    file::{File, FileType},
+    file::File,
+    meta::FileType,
     Error, FileSystem, Offset, Read,
 };
 
