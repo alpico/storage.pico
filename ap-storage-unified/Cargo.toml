@@ -11,3 +11,4 @@ ap-storage = { path = "../ap-storage" }
 ap-storage-ext4-ro = { path = "../ap-storage-ext4-ro" }
 ap-storage-json = { path = "../ap-storage-json" }
 ap-storage-vfat-ro = { path = "../ap-storage-vfat-ro" }
+ap-storage-partition = { path = "../ap-storage-partition" }

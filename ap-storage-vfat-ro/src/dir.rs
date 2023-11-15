@@ -114,12 +114,23 @@ impl<'a> directory::Iterator for Dir<'a> {
         };
 
         // get the long-name if present
-        let mut nlen = self.handle_long_name(next_offset, name);
+        let mut nlen = if self.file.fs.options.ignore_long_name {
+            0
+        } else {
+            self.handle_long_name(next_offset, name)
+        };
 
         // take the short-name if no long-name was found.
         if nlen == 0 {
-            let shortname = entry.name();
-            nlen = shortname.trim_ascii().len();
+            let mut shortname = entry.name();
+            nlen = shortname.trim_ascii_end().len();
+
+            // convert to lower-case
+            if self.file.fs.options.lower_short_name {
+                for x in shortname.iter_mut() {
+                    *x = x.to_ascii_lowercase();
+                }
+            }
             if self.offset == 1 && self.file.is_root() {
                 // drop one dot from the first pointer
                 nlen = 1;

@@ -24,6 +24,10 @@ The alpico storage stack.
 ## Todo
 - [x] unified FS
   - [ ] introduce derive macro to specialize the implementation
+- [x] partition support
+  - [x] aliases
+  - [x] recursive partitions
+  - [ ] extended partitions
 - [ ] metadata per file
   - [x] size
   - [x] id

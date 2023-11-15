@@ -39,7 +39,7 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String, depth: usize) -> R
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();
         if opts.long {
             let f = f.open(entry.offset).unwrap();
-            print!("{}\t{}\t", f.id(), f.size());
+            print!("{:16x}\t{:16x}\t", f.id(), f.size());
         }
         if opts.verbose {
             print!("{entry:?}\t")

@@ -7,6 +7,17 @@ use ap_storage_vfat::*;
 mod dir;
 mod file;
 
+/// The mount options.
+#[derive(Default, Clone)]
+pub struct Options {
+    /// The offset for the superblock may point to a backup.
+    pub sb_offset: Offset,
+    /// Ignore long directory entries.
+    pub ignore_long_name: bool,
+    /// Lowercase the short names.
+    pub lower_short_name: bool,
+}
+
 #[derive(Clone)]
 pub struct VFatFS<'a> {
     disk: &'a dyn Read,
@@ -30,6 +41,8 @@ pub struct VFatFS<'a> {
     root_cluster: u32,
     /// The uuid field.
     uuid: u32,
+    /// Mount options,
+    options: Options,
 }
 
 impl core::fmt::Debug for VFatFS<'_> {
@@ -44,8 +57,8 @@ impl core::fmt::Debug for VFatFS<'_> {
 
 impl<'a> VFatFS<'a> {
     /// Mount the filesystem.
-    pub fn new(disk: &'a dyn Read, sb_offset: u64) -> Result<Self, Error> {
-        let buf: [u8; 512] = disk.read_object(sb_offset)?;
+    pub fn new(disk: &'a dyn Read, options: Options) -> Result<Self, Error> {
+        let buf: [u8; 512] = disk.read_object(options.sb_offset)?;
         let bpb = unsafe { *(buf.as_ptr() as *const BiosParameterBlock) };
         let ebp16 = unsafe { *(buf.as_ptr().add(36) as *const ExtBiosParameterBlock16) };
         let ebp32 = unsafe { *(buf.as_ptr().add(36) as *const ExtBiosParameterBlock32) };
@@ -126,6 +139,7 @@ impl<'a> VFatFS<'a> {
             root_size: root_sectors * sector_size,
             root_cluster,
             uuid,
+            options,
         })
     }
 
