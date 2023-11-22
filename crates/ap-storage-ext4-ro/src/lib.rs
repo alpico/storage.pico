@@ -1,4 +1,9 @@
 //! Read-only access to the ext{2,3,4} filesystems.
+//!
+//! ## Features
+//!
+//! - `file_extents` - enable extents in files that were introduced with ext4.
+//! - `file_blocks`  - enable legacy blocks in files.
 
 #![no_std]
 
@@ -28,7 +33,8 @@ impl<'a> Ext4Fs<'a> {
         }
 
         // support FILETYPE, META_BG, EXTENTS, 64BIT and ignore RECOVER, JOURNAL_DEV, FLEX_BG
-        if sb.feature_incompat & !(0xd2 | 0x20c) != 0 {
+        let feature_incompat = if cfg!(feature="file_extents") { 0xd2 } else { 0x92 };
+        if sb.feature_incompat & !(feature_incompat | 0x20c) != 0 {
             return Err(anyhow::anyhow!(
                 "incompatible features {:x}",
                 sb.feature_incompat

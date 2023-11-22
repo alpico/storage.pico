@@ -9,3 +9,9 @@ edition = "2021"
 anyhow = { version = "1.0.75", default-features = false }
 ap-storage={ path = "../ap-storage"}
 ap-storage-ext4={ path = "../ap-storage-ext4"}
+
+
+[features]
+default = ["file_extents", "file_blocks"]
+file_extents = []
+file_blocks = []

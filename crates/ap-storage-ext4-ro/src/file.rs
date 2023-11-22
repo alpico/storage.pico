@@ -191,10 +191,12 @@ impl<'a> Ext4File<'a> {
             }
             return Ok((cache.phys + ofs, cache.cnt - ofs));
         }
-        let res = if self.inode.extent().is_some() {
+        let res = if cfg!(feature="file_extents") && self.inode.extent().is_some() {
             self.search_extent(block_in_file)?
-        } else {
+        } else if cfg!(feature="file_blocks") {
             self.search_block(block_in_file)?
+        } else {
+            return Err(anyhow::anyhow!("missing feature to lookup blocks"));
         };
         cache.block = block_in_file;
         cache.phys = res.0;
