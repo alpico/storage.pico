@@ -89,7 +89,7 @@ impl<'a> Ext4Extents<'a> {
                 let n = entry.block as u64 - block;
                 return Ok((0, n));
             }
-            ofs = entry.dest() * self.0.block_size;
+            ofs = entry.dest() * self.0.fs.sb.block_size();
         }
     }
 }

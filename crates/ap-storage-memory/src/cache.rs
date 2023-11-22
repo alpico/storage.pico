@@ -76,7 +76,9 @@ impl<'a> MemoryCacheImpl<'a> {
                 Err(_) if n > in_page => break,
                 Err(e) => return Err(e),
                 Ok(0) => break,
-                Ok(c) => { n+= c; }
+                Ok(c) => {
+                    n += c;
+                }
             }
         }
 

@@ -6,7 +6,6 @@ use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
 pub struct Ext4File<'a> {
-    pub(crate) block_size: u64,
     pub(crate) fs: &'a Ext4Fs<'a>,
     pub(crate) inode: Inode,
     leaf_optimization: bool,
@@ -27,7 +26,6 @@ impl<'a> Ext4File<'a> {
     pub fn new(fs: &'a Ext4Fs, nr: u64) -> Result<Self, Error> {
         let inode = fs.inode(nr)?;
         Ok(Self {
-            block_size: fs.sb.block_size(),
             fs,
             inode,
             leaf_optimization: fs.leaf_optimization,
@@ -112,21 +110,22 @@ impl<'a> Read for Ext4File<'a> {
             return Ok(valid_size);
         }
 
-        let block_in_file = offset / self.block_size;
-        let offset_in_block = offset % self.block_size;
+        let block_size = self.fs.sb.block_size();
+        let block_in_file = offset / block_size;
+        let offset_in_block = offset % block_size;
 
         let (phys, max_blocks) = self.lookup_block(block_in_file)?;
 
         let valid_size = core::cmp::min(
             valid_size as Offset,
-            max_blocks * self.block_size - offset_in_block,
+            max_blocks * block_size - offset_in_block,
         ) as usize;
         let buf = &mut buf[..valid_size];
         if phys == 0 {
             buf.fill(0);
             return Ok(valid_size);
         }
-        let ofs = phys * self.block_size + offset_in_block;
+        let ofs = phys * block_size + offset_in_block;
         self.fs.disk.read_bytes(ofs, buf)
     }
 }

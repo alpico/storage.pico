@@ -3,6 +3,6 @@
 #![no_std]
 
 pub mod dir;
+pub mod extent;
 pub mod inode;
 pub mod superblock;
-pub mod extent;

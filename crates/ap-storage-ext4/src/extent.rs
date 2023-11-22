@@ -1,6 +1,5 @@
 //! Definition of file extents.
 
-
 #[derive(Debug, Clone, Copy, Default)]
 #[repr(C)]
 pub struct Ext4ExtentHeader {
