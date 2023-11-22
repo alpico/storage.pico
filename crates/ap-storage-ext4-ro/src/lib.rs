@@ -7,9 +7,10 @@
 
 #![no_std]
 
+pub(crate) mod block;
 mod dir;
+pub(crate) mod extent;
 pub mod file;
-pub (crate) mod extent;
 
 use dir::Dir;
 

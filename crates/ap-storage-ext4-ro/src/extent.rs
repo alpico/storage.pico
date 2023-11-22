@@ -13,14 +13,19 @@ use ap_storage_ext4::extent::*;
 
 #[cfg(feature = "file_extents")]
 impl<'a> Ext4Extents<'a> {
-    
     /// Get an extent object at the certain disk offset.
     fn get<X: Sized + Copy>(&self, ofs: u64) -> Result<X, Error> {
         use ap_storage::ReadExt;
         match ofs {
             // The first extents are inline in the block.
             0..=48 => Ok(unsafe {
-                *(self.0.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X)
+                *(self
+                    .0
+                    .inode
+                    .extent()
+                    .unwrap()
+                    .as_ptr()
+                    .add(ofs as usize / 4) as *const X)
             }),
             // Could detect errors here
             _ => self.0.fs.disk.read_object(ofs),
@@ -87,6 +92,4 @@ impl<'a> Ext4Extents<'a> {
             ofs = entry.dest() * self.0.block_size;
         }
     }
-
 }
-
