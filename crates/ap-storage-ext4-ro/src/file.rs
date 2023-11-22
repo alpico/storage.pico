@@ -6,9 +6,9 @@ use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
 pub struct Ext4File<'a> {
-    block_size: u64,
-    fs: &'a Ext4Fs<'a>,
-    inode: Inode,
+    pub (crate) block_size: u64,
+    pub (crate) fs: &'a Ext4Fs<'a>,
+    pub (crate) inode: Inode,
     leaf_optimization: bool,
     nr: u64,
     cache: RefCell<FileCache>,
@@ -23,7 +23,8 @@ struct FileCache {
 }
 
 impl<'a> Ext4File<'a> {
-    /// The nnumber of adjacent blocks merged.
+    /// The number of adjacent blocks merged.
+    #[cfg(feature = "file_blocks")]
     const MAX_MERGED: usize = 16;
 
     /// Open the given file by inode number.
@@ -40,6 +41,7 @@ impl<'a> Ext4File<'a> {
     }
 
     /// Count the contigious block numbers in the slice.
+    #[cfg(feature = "file_blocks")]
     fn count_contigous(v: &[u32]) -> usize {
         let mut cnt = 1;
         let start = v[0] as u64;
@@ -56,131 +58,64 @@ impl<'a> Ext4File<'a> {
     ///
     /// Returns the physical block number and the number of continous blocks.
     /// A zero block number means a hole in the file.
-    fn search_block(&self, mut blk: u64) -> Result<(u64, u64), Error> {
-        if blk < 12 {
-            let start = self.inode.blocks[blk as usize] as u64;
-            let cnt = Self::count_contigous(&self.inode.blocks[blk as usize..12]);
-            return Ok((start, cnt as u64));
-        }
-        blk -= 12;
-        let log_numbers_per_block = self.block_size.ilog2() as usize - 2;
-        let index_at_level = |blk: u64, level: usize| {
-            (blk >> ((level - 1) * log_numbers_per_block)) & ((1 << log_numbers_per_block) - 1)
-        };
+    fn search_block(&self, mut _block: u64) -> Result<(u64, u64), Error> {
+        #[cfg(not(feature = "file_blocks"))]
+        return Err(anyhow::anyhow!("blocks not supported"));
 
-        // find required level and adjust blk accordingly
-        let mut level = 1usize;
-        while level < 4 {
-            if blk >> (level * log_numbers_per_block) == 0 {
-                break;
+        #[cfg(feature = "file_blocks")]
+        {
+            if _block < 12 {
+                let start = self.inode.blocks[_block as usize] as u64;
+                let cnt = Self::count_contigous(&self.inode.blocks[_block as usize..12]);
+                return Ok((start, cnt as u64));
             }
-            blk -= 1 << (level * log_numbers_per_block);
-            level += 1;
-        }
+            _block -= 12;
+            let log_numbers_per_block = self.block_size.ilog2() as usize - 2;
+            let index_at_level = |blk: u64, level: usize| {
+                (blk >> ((level - 1) * log_numbers_per_block)) & ((1 << log_numbers_per_block) - 1)
+            };
 
-        // follow level indirections
-        let mut res = self.inode.blocks[11 + level];
-        let mut cnt = 1;
-        while level > 0 && res != 0 {
-            let index = index_at_level(blk, level);
-            if level != 1 || (index + Self::MAX_MERGED as u64) >> log_numbers_per_block > 0 {
-                res = self
-                    .fs
-                    .disk
-                    .read_object(res as u64 * self.block_size + index * 4)?;
-            } else {
-                let blocks: [u32; Ext4File::MAX_MERGED] = self
-                    .fs
-                    .disk
-                    .read_object(res as u64 * self.block_size + index * 4)?;
-                res = blocks[0];
-                cnt = Self::count_contigous(&blocks);
-            }
-            level -= 1
-        }
-
-        // huge gap?
-        let mut cnt = cnt as u64;
-        if level > 0 {
-            let blocks_at_level = 1 << (level * log_numbers_per_block);
-            cnt = blocks_at_level - blk % blocks_at_level;
-        }
-        Ok((res as u64, cnt))
-    }
-
-    /// Get an extent object at the certain disk offset.
-    fn get_extent<X: Sized + Copy>(&self, ofs: u64) -> Result<X, Error> {
-        match ofs {
-            // The first extents are inline in the block.
-            0..=48 => Ok(unsafe {
-                *(self.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X)
-            }),
-            // Could detect errors here
-            _ => self.fs.disk.read_object(ofs),
-        }
-    }
-
-    /// Do a binary search for a block in the extend tree.
-    fn search_binary(&self, block: u64, ofs: u64, count: usize) -> Result<u64, Error> {
-        let mut left = 0;
-        let mut right = count - 1;
-
-        while left < right {
-            let middle = (left + right + 1) / 2;
-            let start = self.get_extent::<u32>(ofs + middle as u64 * 12)? as u64;
-            if start <= block {
-                left = middle;
-                if start == block {
+            // find required level and adjust _block accordingly
+            let mut level = 1usize;
+            while level < 4 {
+                if _block >> (level * log_numbers_per_block) == 0 {
                     break;
                 }
-            } else {
-                right = middle - 1;
+                _block -= 1 << (level * log_numbers_per_block);
+                level += 1;
             }
-        }
-        Ok(ofs + left as u64 * 12)
-    }
 
-    /// Search in the extent tree for the right block.
-    ///
-    /// Returns the physical block number and the number of continous blocks.
-    /// A zero block number means a hole in the file.
-    fn search_extent(&self, block: u64) -> Result<(u64, u64), Error> {
-        let mut ofs = 0;
-        let mut depth = 0;
+            // follow level indirections
+            let mut res = self.inode.blocks[11 + level];
+            let mut cnt = 1;
+            while level > 0 && res != 0 {
+                let index = index_at_level(_block, level);
+                if level != 1 || (index + Self::MAX_MERGED as u64) >> log_numbers_per_block > 0 {
+                    res = self
+                        .fs
+                        .disk
+                        .read_object(res as u64 * self.block_size + index * 4)?;
+                } else {
+                    let blocks: [u32; Ext4File::MAX_MERGED] = self
+                        .fs
+                        .disk
+                        .read_object(res as u64 * self.block_size + index * 4)?;
+                    res = blocks[0];
+                    cnt = Self::count_contigous(&blocks);
+                }
+                level -= 1
+            }
 
-        loop {
-            let header: Ext4ExtentHeader = self.get_extent(ofs)?;
-            if header.magic != 0xf30a {
-                return Err(anyhow::anyhow!("extent magic"));
+            // huge gap?
+            let mut cnt = cnt as u64;
+            if level > 0 {
+                let blocks_at_level = 1 << (level * log_numbers_per_block);
+                cnt = blocks_at_level - _block % blocks_at_level;
             }
-            if ofs != 0 && depth != header.depth + 1 {
-                return Err(anyhow::anyhow!("extent depth"));
-            }
-            if header.depth == 0 {
-                ofs = self.search_binary(block, ofs + 12, header.entries as usize)?;
-                let entry: Ext4ExtentLeaf = self.get_extent(ofs)?;
-                if entry.block as u64 > block {
-                    // hole before
-                    let n = entry.block as u64 - block;
-                    return Ok((0, n));
-                }
-                let n = block - entry.block as u64;
-                if n < entry.len as u64 {
-                    return Ok((entry.dest() + n, entry.len as u64 - n));
-                }
-                // hole after
-                return Ok((0, 1));
-            }
-            depth = header.depth;
-            ofs = self.search_binary(block, ofs + 12, header.entries as usize)?;
-            let entry: Ext4ExtentIndex = self.get_extent(ofs)?;
-            if entry.block as u64 > block {
-                let n = entry.block as u64 - block;
-                return Ok((0, n));
-            }
-            ofs = entry.dest() * self.block_size;
+            Ok((res as u64, cnt))
         }
     }
+
 
     fn lookup_block(&self, block_in_file: u64) -> Result<(u64, u64), Error> {
         let mut cache = self.cache.borrow_mut();
@@ -191,12 +126,10 @@ impl<'a> Ext4File<'a> {
             }
             return Ok((cache.phys + ofs, cache.cnt - ofs));
         }
-        let res = if cfg!(feature="file_extents") && self.inode.extent().is_some() {
-            self.search_extent(block_in_file)?
-        } else if cfg!(feature="file_blocks") {
-            self.search_block(block_in_file)?
+        let res = if self.inode.extent().is_some() {
+            crate::extent::Ext4Extents(self).search(block_in_file)?
         } else {
-            return Err(anyhow::anyhow!("missing feature to lookup blocks"));
+            self.search_block(block_in_file)?
         };
         cache.block = block_in_file;
         cache.phys = res.0;
@@ -276,45 +209,5 @@ impl<'a> Read for Ext4File<'a> {
         }
         let ofs = phys * self.block_size + offset_in_block;
         self.fs.disk.read_bytes(ofs, buf)
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-struct Ext4ExtentHeader {
-    magic: u16,
-    entries: u16,
-    _0: u16,
-    depth: u16,
-    _1: u32,
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-struct Ext4ExtentLeaf {
-    block: u32,
-    len: u16,
-    hi: u16,
-    lo: u32,
-}
-
-impl Ext4ExtentLeaf {
-    fn dest(&self) -> u64 {
-        ((self.hi as u64) << 32) | self.lo as u64
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-struct Ext4ExtentIndex {
-    block: u32,
-    lo: u32,
-    hi: u16,
-    _0: u16,
-}
-
-impl Ext4ExtentIndex {
-    fn dest(&self) -> u64 {
-        ((self.hi as u64) << 32) | self.lo as u64
     }
 }

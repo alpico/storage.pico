@@ -5,3 +5,4 @@
 pub mod dir;
 pub mod inode;
 pub mod superblock;
+pub mod extent;

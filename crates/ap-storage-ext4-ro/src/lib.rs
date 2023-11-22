@@ -9,6 +9,7 @@
 
 mod dir;
 pub mod file;
+pub (crate) mod extent;
 
 use dir::Dir;
 
@@ -33,7 +34,11 @@ impl<'a> Ext4Fs<'a> {
         }
 
         // support FILETYPE, META_BG, EXTENTS, 64BIT and ignore RECOVER, JOURNAL_DEV, FLEX_BG
-        let feature_incompat = if cfg!(feature="file_extents") { 0xd2 } else { 0x92 };
+        let feature_incompat = if cfg!(feature = "file_extents") {
+            0xd2
+        } else {
+            0x92
+        };
         if sb.feature_incompat & !(feature_incompat | 0x20c) != 0 {
             return Err(anyhow::anyhow!(
                 "incompatible features {:x}",

@@ -15,3 +15,5 @@ ap-storage-ext4={ path = "../ap-storage-ext4"}
 default = ["file_extents", "file_blocks"]
 file_extents = []
 file_blocks = []
+
+[package.metadata.cargo-all-features]
