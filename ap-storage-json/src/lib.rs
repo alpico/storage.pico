@@ -1,9 +1,4 @@
-use ap_storage::{
-    directory,
-    file::File,
-    meta::FileType,
-    Error, FileSystem, Offset, Read,
-};
+use ap_storage::{directory, file::File, meta::FileType, Error, FileSystem, Offset, Read};
 
 mod dir;
 mod file;

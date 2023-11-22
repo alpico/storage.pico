@@ -1,7 +1,7 @@
 //! File support.
 
 use super::{Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
-use ap_storage::{meta::MetaData, file::File};
+use ap_storage::{file::File, meta::MetaData};
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
@@ -235,7 +235,6 @@ impl<'a> File for Ext4File<'a> {
         }
     }
 }
-
 
 impl<'a> Read for Ext4File<'a> {
     /// Read in the given inode.

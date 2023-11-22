@@ -4,6 +4,7 @@ use ap_storage::{Error, Offset, Read};
 use std::fs::File;
 use std::os::fd::AsRawFd;
 
+/// A disk backed by a file in Linux.
 pub struct LinuxDisk {
     file: File,
     offset: u64,

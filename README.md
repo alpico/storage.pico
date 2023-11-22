@@ -1,5 +1,8 @@
 # storage.pico
+
 The alpico storage stack.
+
+It consists of file-systems, block-devices and caching layer.
 
 
 ## Supported FileSystems
@@ -11,7 +14,6 @@ The alpico storage stack.
 ## Library
 - LinuxDisk
 - InlineCache
-- MemoryCache
 - ReadSlice
 - date
 
@@ -26,12 +28,7 @@ The alpico storage stack.
 - [x] unified FS
   - [ ] introduce derive macro to specialize the implementation
 - [x] partition support
-  - [ ] extended partitions
-- [x] metadata per file
-  - [x] size
-  - [x] id
-  - [x] ftype
-  - [x] mtime
+  - [ ] follow extended/logical partitions
 - [ ] extensible metadata
-- [ ] memory cache
-  - [ ] multiple ways
+- [ ] external memory cache
+  - [ ] support multiple ways

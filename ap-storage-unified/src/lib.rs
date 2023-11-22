@@ -2,7 +2,7 @@
 
 #![no_std]
 
-use ap_storage::{file::File, FileSystem, Read, meta::MetaData};
+use ap_storage::{file::File, meta::MetaData, FileSystem, Read};
 use ap_storage_ext4_ro::Ext4Fs;
 use ap_storage_json::JsonFS;
 use ap_storage_partition::PartitionFS;

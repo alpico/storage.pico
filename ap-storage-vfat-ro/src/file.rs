@@ -1,7 +1,10 @@
 //! File in VFAT
 
 use super::{dir::Dir, DirectoryEntry, VFatFS};
-use ap_storage::{Error, Offset, Read, ReadExt, meta::{MetaData, FileType}};
+use ap_storage::{
+    meta::{FileType, MetaData},
+    Error, Offset, Read, ReadExt,
+};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -46,7 +49,6 @@ impl<'a> File<'a> {
         }
         res as Offset
     }
-
 }
 
 impl<'a> ap_storage::file::File for File<'a> {
@@ -73,7 +75,6 @@ impl<'a> ap_storage::file::File for File<'a> {
         let entry: DirectoryEntry = (self as &dyn Read).read_object(32 * offset)?;
         Ok(Self::new(self.fs, entry))
     }
-
 
     fn meta(&self) -> MetaData {
         let filetype = if self.inode.attr & 0x8 != 0 || self.inode.name[0] == 0xe5 {

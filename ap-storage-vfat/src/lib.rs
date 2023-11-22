@@ -3,9 +3,8 @@
 #![feature(byte_slice_trim_ascii)]
 
 mod long_entry;
-pub use long_entry::LongEntry;
 use ap_date::{dos_date2ts, dos_time2ts, Time};
-
+pub use long_entry::LongEntry;
 
 /// Directory entry.
 #[derive(Clone, Copy, Default, PartialEq)]
@@ -92,7 +91,8 @@ impl DirectoryEntry {
 
     /// Return the birth time in nanoseconds since 1970.
     pub fn btime(&self) -> Time {
-        (dos_date2ts(self.bdate) + dos_time2ts(self.btime)) * 1_000_000_000 + self.btenthms as Time * 10_000_000
+        (dos_date2ts(self.bdate) + dos_time2ts(self.btime)) * 1_000_000_000
+            + self.btenthms as Time * 10_000_000
     }
 }
 

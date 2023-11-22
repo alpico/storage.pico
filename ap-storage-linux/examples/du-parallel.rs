@@ -2,12 +2,7 @@
 
 use al_crunch_pool::{execute, Options, Sender};
 use al_mmap::Mmap;
-use ap_storage::{
-    directory::Iterator,
-    file::File,
-    meta::FileType,
-    Error, FileSystem,
-};
+use ap_storage::{directory::Iterator, file::File, meta::FileType, Error, FileSystem};
 use ap_storage_ext4_ro::{file::Ext4File, Ext4Fs};
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options as GumdropOptions;

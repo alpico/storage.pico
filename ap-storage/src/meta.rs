@@ -18,7 +18,6 @@ pub enum FileType {
     Unknown,
 }
 
-
 /// The minimal subset of metadata for all files.
 pub struct MetaData {
     pub size: Offset,
@@ -26,4 +25,3 @@ pub struct MetaData {
     pub filetype: FileType,
     pub mtime: Time,
 }
- 

@@ -1,7 +1,11 @@
 //! File implementation for partitions.
 
 use crate::{dir::PartitionDir, Partition};
-use ap_storage::{file::File, Error, Offset, Read, ReadExt, meta::{MetaData, FileType}};
+use ap_storage::{
+    file::File,
+    meta::{FileType, MetaData},
+    Error, Offset, Read, ReadExt,
+};
 
 pub struct PartitionFile<'a> {
     pub(crate) disk: &'a dyn Read,
@@ -65,17 +69,19 @@ impl File for PartitionFile<'_> {
     }
     /// Get the metadata for this file.
     fn meta(&self) -> MetaData {
-        let filetype =
-            if self.len == 0 {
+        let filetype = if self.len == 0 {
             FileType::Unknown
-            }
-        else if self.is_dir() {
+        } else if self.is_dir() {
             FileType::Directory
-        }
-        else {
+        } else {
             FileType::File
         };
 
-        MetaData { size: self.len, id: self.offset, filetype, mtime: 0 }
+        MetaData {
+            size: self.len,
+            id: self.offset,
+            filetype,
+            mtime: 0,
+        }
     }
 }

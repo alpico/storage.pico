@@ -1,5 +1,5 @@
 use super::*;
-use ap_storage::meta::{MetaData, FileType};
+use ap_storage::meta::{FileType, MetaData};
 
 pub struct JsonFile<'a> {
     value: &'a serde_json::Value,
@@ -53,7 +53,7 @@ where
                 FileType::Directory
             } else {
                 FileType::File
-            }
+            },
         }
     }
 
