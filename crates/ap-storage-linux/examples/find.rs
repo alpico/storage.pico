@@ -60,7 +60,7 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String, depth: usize) -> R
 
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
-    let disk = LinuxDisk::new("/dev/stdin", opts.offset);
+    let disk = LinuxDisk::new("/dev/stdin", opts.offset)?;
     let fs =
         ap_storage_unified::UnifiedFs::new(&disk).ok_or(anyhow::anyhow!("no filesystem found"))?;
     let start = &opts.start;

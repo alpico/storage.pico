@@ -4,6 +4,9 @@ use ap_storage::{Error, Offset, Read};
 use std::fs::File;
 use std::os::fd::AsRawFd;
 
+mod disk_rw;
+pub use disk_rw::LinuxDiskRW;
+
 /// A disk backed by a file in Linux.
 pub struct LinuxDisk {
     file: File,
@@ -11,11 +14,11 @@ pub struct LinuxDisk {
 }
 
 impl LinuxDisk {
-    pub fn new(filename: &str, offset: u64) -> Self {
-        Self {
-            file: File::open(filename).expect("open file"),
+    pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
+        Ok(Self {
+            file: File::open(filename)?,
             offset,
-        }
+        })
     }
 }
 
