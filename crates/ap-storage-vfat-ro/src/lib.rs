@@ -67,10 +67,7 @@ impl<'a> VFatFS<'a> {
         if buf[511] != 0xaa || buf[510] != 0x55 {
             return Err(anyhow::anyhow!("boot signature"));
         }
-        if bpb.bytes_per_sector > 4096
-            || bpb.bytes_per_sector < 512
-            || (bpb.bytes_per_sector & (bpb.bytes_per_sector - 1)) != 0
-        {
+        if bpb.bytes_per_sector < 128 || !bpb.bytes_per_sector.is_power_of_two() {
             return Err(anyhow::anyhow!("bytes per sector"));
         }
         if bpb.sectors_per_cluster == 0

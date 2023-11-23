@@ -54,11 +54,11 @@ impl MakeVFatFS {
         Self { drive: v, ..self }
     }
 
-    /// The size of the sector in bytes. One of [512,1024,2048,4096] bytes.
+    /// The size of the sector in bytes.
     pub fn sector_size(self, v: u16) -> Result<Self, Error> {
-        if !v.is_power_of_two() || !(512..=4096).contains(&v) {
+        if !v.is_power_of_two() || v < 128 {
             return Err(anyhow::anyhow!(
-                "sector_size must be one of [512,1024,2048,4096]"
+                "sector_size must be a power of two and larger than 128",
             ));
         }
         Ok(Self {

@@ -60,7 +60,7 @@ struct CommandOptions {
     #[options(default = "512")]
     root_entries: u16,
 
-    /// One of [512,1024,2048,4096] bytes.
+    /// Typically one of [512,1024,2048,4096] bytes.
     #[options(default = "512")]
     sector_size: u16,
 
