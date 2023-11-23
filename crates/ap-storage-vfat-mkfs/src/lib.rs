@@ -210,11 +210,12 @@ impl MakeVFatFS {
             ..BiosParameterBlock::default()
         };
 
+        let data_start = bpb.reserved_sectors as u64
+            + fat_size * num_fats as u64
+            + (bpb.root_entries as u64 * 32).div_ceil(sector_size);
+
         // align the data-area to a cluster
         if self.align {
-            let data_start = bpb.reserved_sectors as u64
-                + fat_size * num_fats as u64
-                + (bpb.root_entries as u64 * 32).div_ceil(sector_size);
             bpb.reserved_sectors +=
                 (data_start.next_multiple_of(self.per_cluster as u64) - data_start) as u16;
         }
@@ -247,12 +248,27 @@ impl MakeVFatFS {
                 ext_flags: 0x80,
                 version: 0,
                 root_cluster: 2,
-                fs_info: 0,
+                fs_info: if sector_size >= 512 && bpb.reserved_sectors > 1 {
+                    1
+                } else {
+                    0
+                },
                 backup_boot: if bpb.reserved_sectors > 6 { 6 } else { 0 },
                 res: [0; 12],
                 ext: ebp16,
             };
             disk.write_object(36, ebp32)?;
+
+            // write the FSINFO structure
+            if ebp32.fs_info != 0 {
+                let ofs = ebp32.fs_info as u64 * sector_size;
+                let cluster = ((sectors - data_start) / self.per_cluster as u64) as u32;
+                disk.write_object(ofs, 0x41615252u32)?;
+                disk.write_object(ofs + 484, 0x61417272u32)?;
+                disk.write_object(ofs + 488, cluster - 1)?;
+                disk.write_object(ofs + 492, 3)?;
+                disk.write_object(ofs + 510, 0xaa55u16)?;
+            }
 
             // write the backup boot sector
             let ofs = ebp32.backup_boot as u64 * sector_size;
@@ -268,7 +284,7 @@ impl MakeVFatFS {
                 Variant::Fat12 => disk.write_object(ofs, 0x800ff8u32)?,
                 Variant::Fat16 => disk.write_object(ofs, 0x8000fff8u32)?,
                 Variant::Fat32 => {
-                    disk.write_object(ofs, 0x8000_0000_ffff_fff8u64)?;
+                    disk.write_object(ofs, 0x0800_0000_ffff_fff8u64)?;
                     disk.write_object(ofs + 8, 0xffff_fff8u64)?;
                 }
             }
