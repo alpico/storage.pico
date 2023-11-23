@@ -15,6 +15,10 @@ pub trait ReadExt {
 
     /// Read a whole object.
     fn read_object<T: Sized>(&self, offset: Offset) -> Result<T, Error>;
+
+    /// Get the size.
+    fn detect_size(&self) -> Offset;
+
 }
 
 impl ReadExt for &dyn Read {
@@ -36,6 +40,29 @@ impl ReadExt for &dyn Read {
 
         self.read_exact(offset, buf)?;
         Ok(unsafe { res.assume_init() })
+    }
+
+
+    /// Detect the size of a disk by doing binary search.
+    fn detect_size(&self) -> Offset {
+        let mut start = 0;
+        let mut end = !0;
+        while start != end {
+            let middle = (start + end) / 2;
+            let mut buf = [0u8];
+            match self.read_bytes(middle, &mut buf) {
+                Ok(1) => {
+                    start = middle;
+                }
+                _ => {
+                    end = middle;
+                }
+            }
+            if  middle == (start + end) / 2 {
+                break;
+            }
+        }
+        end
     }
 }
 

@@ -18,7 +18,7 @@ impl Read for LinuxDiskRW {
     }
 }
 
-impl Write<'_> for LinuxDiskRW {
+impl Write for LinuxDiskRW {
     fn write_bytes(&self, offset: Offset, buf: &[u8]) -> Result<usize, Error> {
         let res = unsafe {
             libc::pwrite(

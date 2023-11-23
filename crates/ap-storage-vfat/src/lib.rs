@@ -110,7 +110,7 @@ impl core::fmt::Debug for DirectoryEntry {
 }
 
 /// The BIOS Parameter Block as present in the first sector of the disk.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(packed)]
 pub struct BiosParameterBlock {
     pub jmp: [u8; 3],
@@ -150,7 +150,7 @@ pub struct ExtBiosParameterBlock32 {
     pub version: u16,
     pub root_cluster: u32,
     pub fs_info: u16,
-    pub boot_sector: u16,
+    pub backup_boot: u16,
     pub res: [u8; 12],
     pub ext: ExtBiosParameterBlock16,
 }
