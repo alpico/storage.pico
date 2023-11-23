@@ -6,6 +6,14 @@ mod long_entry;
 use ap_date::{dos_date2ts, dos_time2ts, Time};
 pub use long_entry::LongEntry;
 
+/// The different FAT variants.
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Variant {
+    Fat12 = 12,
+    Fat16 = 16,
+    Fat32 = 32,
+}
+
 /// Directory entry.
 #[derive(Clone, Copy, Default, PartialEq)]
 #[repr(C)]
