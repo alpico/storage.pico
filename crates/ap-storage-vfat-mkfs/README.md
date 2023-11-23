@@ -1,4 +1,4 @@
-# ap-storage-vfat
+# ap-storage-vfat-mkfs
 
 #### This crate is part of
 
