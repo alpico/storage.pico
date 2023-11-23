@@ -1,4 +1,6 @@
-/// Make a vfat filesystem.
+//! Make a vfat filesystem.
+#![no_std]
+
 use ap_storage::{Error, Write, WriteExt};
 use ap_storage_vfat::{
     BiosParameterBlock, ExtBiosParameterBlock16, ExtBiosParameterBlock32, Variant,
@@ -130,6 +132,14 @@ impl MakeVFatFS {
 }
 
 impl MakeVFatFS {
+    fn filesys_type(v: Variant) -> [u8; 8] {
+        match v {
+            Variant::Fat12 => *b"FAT12   ",
+            Variant::Fat16 => *b"FAT16   ",
+            Variant::Fat32 => *b"FAT32   ",
+        }
+    }
+
     /// Calculate the variant and the fat-size in sectors.
     pub fn calc_variant(&self, bytes: u64) -> Result<(Variant, u64), Error> {
         let sector_size = self.sector_size as u64;
@@ -235,7 +245,7 @@ impl MakeVFatFS {
             bootsig: 0x29,
             volume_id: self.volume_id,
             volume_label: self.label,
-            filesys_type: make_string(&format!("FAT{}", variant as usize)),
+            filesys_type: Self::filesys_type(variant),
         };
         // the boot magic
         disk.write_object(0x1fe, 0xaa55u16)?;
