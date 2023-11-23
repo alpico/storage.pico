@@ -1,3 +1,7 @@
+//! Using json object as file-system.
+//!
+//! - first example of a pseudo-filesystem
+//! - usefull for small in-memory data
 use ap_storage::{directory, file::File, meta::FileType, Error, FileSystem, Offset, Read};
 
 mod dir;

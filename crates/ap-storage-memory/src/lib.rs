@@ -1,4 +1,6 @@
 //! In-memory data structures.
+//!
+//! Provides caches and read-access to slices.
 #![no_std]
 
 use ap_storage::{Error, Offset, Read};
@@ -9,7 +11,7 @@ mod inline;
 mod slice;
 pub use slice::*;
 
-/// A memory cache.
+/// A memory cache storing its data in an external slice.
 pub struct MemoryCache<'a>(RefCell<cache::MemoryCacheImpl<'a>>);
 
 impl<'a> MemoryCache<'a> {
@@ -25,7 +27,7 @@ impl Read for MemoryCache<'_> {
     }
 }
 
-/// A memory cache.
+/// A memory cache storing its data inside the object.
 pub struct InlineCache<'a, const N: usize>(RefCell<inline::InlineCacheImpl<'a, N>>);
 
 impl<'a, const N: usize> InlineCache<'a, N> {

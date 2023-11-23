@@ -1,6 +1,7 @@
+//! Read from a slice of memory.
 use super::{Error, Offset, Read};
 
-/// Read from a slice of memory.
+/// Adapter to read from a slice of memory.
 #[derive(Clone, Copy)]
 pub struct ReadSlice<'a>(pub &'a [u8]);
 

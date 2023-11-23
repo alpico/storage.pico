@@ -13,6 +13,7 @@ libc = "0.2.149"
 [dev-dependencies]
 gumdrop = "0.8.1"
 ap-storage-ext4-ro = { path="../ap-storage-ext4-ro" }
+ap-storage-vfat = { path="../ap-storage-vfat" }
 ap-storage-unified = { path="../ap-storage-unified" }
 ap-storage-memory = { path="../ap-storage-memory" }
 al-mmap = { git = "https://github.com/alpico/linux.pico.git" }
