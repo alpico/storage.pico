@@ -5,6 +5,8 @@ use crate::{Error, Offset};
 pub trait Write {
     /// Write some byte buffer.
     fn write_bytes(&self, offset: Offset, buf: &[u8]) -> Result<usize, Error>;
+    /// Discard a region and return the bytes successfully descarded.
+    fn discard(&self, offset: Offset, len: Offset) -> Result<Offset, Error>;
 }
 
 pub trait WriteExt {
@@ -12,8 +14,9 @@ pub trait WriteExt {
     fn write_exact(&self, offset: Offset, buf: &[u8]) -> Result<(), Error>;
     /// Write the whole object.
     fn write_object<T: Sized>(&self, offset: Offset, obj: T) -> Result<(), Error>;
+    /// Discard a whole area.
+    fn discard_all(&self, offset: Offset, len: Offset) -> Result<(), Error>;
 }
-
 
 /// Trait extension to simplify writing.
 impl WriteExt for &dyn Write {
@@ -22,7 +25,7 @@ impl WriteExt for &dyn Write {
         let mut done = 0;
         while done != buf.len() {
             match self.write_bytes(offset + done as Offset, &buf[done..])? {
-                0 => return Err(PartialWriteError)?,
+                0 => return Err(Error::msg(PartialWriteError)),
                 n => done += n,
             }
         }
@@ -35,6 +38,18 @@ impl WriteExt for &dyn Write {
             core::slice::from_raw_parts(&obj as *const T as *const u8, core::mem::size_of::<T>())
         };
         self.write_exact(offset, buf)
+    }
+
+    /// Discard all bytes in the range.
+    fn discard_all(&self, mut offset: Offset, len: Offset) -> Result<(), Error> {
+        let end = offset + len;
+        while offset < len {
+            match self.discard(offset, end - offset)? {
+                0 => return Err(Error::msg(PartialWriteError)),
+                n => offset += n,
+            }
+        }
+        Ok(())
     }
 }
 

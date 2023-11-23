@@ -18,7 +18,6 @@ pub trait ReadExt {
 
     /// Get the size.
     fn detect_size(&self) -> Offset;
-
 }
 
 impl ReadExt for &dyn Read {
@@ -42,7 +41,6 @@ impl ReadExt for &dyn Read {
         Ok(unsafe { res.assume_init() })
     }
 
-
     /// Detect the size of a disk by doing binary search.
     fn detect_size(&self) -> Offset {
         let mut start = 0;
@@ -58,7 +56,7 @@ impl ReadExt for &dyn Read {
                     end = middle;
                 }
             }
-            if  middle == (start + end) / 2 {
+            if middle == (start + end) / 2 {
                 break;
             }
         }

@@ -33,4 +33,19 @@ impl Write for LinuxDiskRW {
         }
         Ok(res as usize)
     }
+
+    fn discard(&self, offset: Offset, len: Offset) -> Result<Offset, Error> {
+        let res = unsafe {
+            libc::fallocate(
+                self.0.file.as_raw_fd(),
+                libc::FALLOC_FL_PUNCH_HOLE | libc::FALLOC_FL_KEEP_SIZE,
+                offset as i64,
+                len as i64,
+            )
+        };
+        if res == -1 {
+            return Err(std::io::Error::last_os_error().into());
+        }
+        Ok(len)
+    }
 }
