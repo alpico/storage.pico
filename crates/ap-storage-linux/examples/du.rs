@@ -57,8 +57,7 @@ fn main() -> Result<(), Error> {
     let disk_mmap = ReadSlice(mmap.0);
     let disk: &dyn Read = if opts.pread { &disk_pread } else { &disk_mmap };
 
-    let fs =
-        ap_storage_unified::UnifiedFs::new(disk).ok_or(anyhow::anyhow!("no filesystem found"))?;
+    let fs = ap_storage_unified::UnifiedFs::new(disk).ok_or(anyhow::anyhow!("no filesystem found"))?;
     let dir = fs.root()?.lookup_path(opts.start.as_bytes())?;
     let (count, size) = visit(&dir)?;
     println!("{}\t{}\t{}", opts.start, count, size);

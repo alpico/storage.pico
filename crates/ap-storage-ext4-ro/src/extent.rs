@@ -18,15 +18,7 @@ impl<'a> Ext4Extents<'a> {
         use ap_storage::ReadExt;
         match ofs {
             // The first extents are inline in the block.
-            0..=48 => Ok(unsafe {
-                *(self
-                    .0
-                    .inode
-                    .extent()
-                    .unwrap()
-                    .as_ptr()
-                    .add(ofs as usize / 4) as *const X)
-            }),
+            0..=48 => Ok(unsafe { *(self.0.inode.extent().unwrap().as_ptr().add(ofs as usize / 4) as *const X) }),
             // Could detect errors here
             _ => self.0.fs.disk.read_object(ofs),
         }

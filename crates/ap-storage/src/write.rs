@@ -34,9 +34,7 @@ impl WriteExt for &dyn Write {
 
     /// Write the whole object
     fn write_object<T: Sized>(&self, offset: Offset, obj: T) -> Result<(), Error> {
-        let buf = unsafe {
-            core::slice::from_raw_parts(&obj as *const T as *const u8, core::mem::size_of::<T>())
-        };
+        let buf = unsafe { core::slice::from_raw_parts(&obj as *const T as *const u8, core::mem::size_of::<T>()) };
         self.write_exact(offset, buf)
     }
 

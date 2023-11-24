@@ -32,21 +32,13 @@ where
     where
         Self: Sized,
     {
-        let children = self
-            .value
-            .as_object()
-            .ok_or(anyhow::anyhow!("not an object"))?;
-        let child = children
-            .keys()
-            .nth(offset as usize)
-            .ok_or(anyhow::anyhow!("eof"))?;
+        let children = self.value.as_object().ok_or(anyhow::anyhow!("not an object"))?;
+        let child = children.keys().nth(offset as usize).ok_or(anyhow::anyhow!("eof"))?;
         Ok(JsonFile::new(&children[child], child))
     }
     fn meta(&self) -> MetaData {
         MetaData {
-            size: serde_json::to_string(self.value)
-                .map(|x| x.len())
-                .unwrap_or_default() as Offset,
+            size: serde_json::to_string(self.value).map(|x| x.len()).unwrap_or_default() as Offset,
             id: self.id,
             mtime: 0,
             filetype: if self.value.is_object() {
@@ -60,10 +52,7 @@ where
     /// A more efficient lookup.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
         let name = core::str::from_utf8(name).map_err(Error::msg)?;
-        let children = self
-            .value
-            .as_object()
-            .ok_or(anyhow::anyhow!("not an object"))?;
+        let children = self.value.as_object().ok_or(anyhow::anyhow!("not an object"))?;
         let Some(value) = children.get(name) else {
             return Ok(None);
         };

@@ -24,9 +24,7 @@ impl<'a> MemoryCacheImpl<'a> {
 
         // we seperate the backing store here - the first is used for the pages, the remaining for the metadata
         let split = pages * Self::PAGE_SIZE;
-        let meta = unsafe {
-            core::slice::from_raw_parts_mut(data.as_mut_ptr().add(split) as *mut Metadata, pages)
-        };
+        let meta = unsafe { core::slice::from_raw_parts_mut(data.as_mut_ptr().add(split) as *mut Metadata, pages) };
         let userdata = &mut data[..split];
 
         // initialize the metadata to point to nothing
@@ -69,9 +67,7 @@ impl<'a> MemoryCacheImpl<'a> {
         // try to read a full page
         let mut n = 0;
         while n != Self::PAGE_SIZE {
-            let x = self
-                .parent
-                .read_bytes(ofs - (in_page + n) as Offset, &mut our[n..]);
+            let x = self.parent.read_bytes(ofs - (in_page + n) as Offset, &mut our[n..]);
             match x {
                 Err(_) if n > in_page => break,
                 Err(e) => return Err(e),

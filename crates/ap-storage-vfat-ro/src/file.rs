@@ -135,12 +135,7 @@ impl Read for File<'_> {
             }
         };
         // limit the bytes to the current block
-        let max_n = core::cmp::min(
-            max_n,
-            self.fs.block_size as usize - offset_in_block as usize,
-        );
-        self.fs
-            .disk
-            .read_bytes(ofs + offset_in_block, &mut buf[..max_n])
+        let max_n = core::cmp::min(max_n, self.fs.block_size as usize - offset_in_block as usize);
+        self.fs.disk.read_bytes(ofs + offset_in_block, &mut buf[..max_n])
     }
 }

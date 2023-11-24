@@ -28,9 +28,7 @@ impl<'a> Iterator for Dir<'a> {
         extern crate std;
 
         if nlen > 0 {
-            let n = self
-                .parent
-                .read_bytes(self.offset + O as u64, &mut name[..nlen])?;
+            let n = self.parent.read_bytes(self.offset + O as u64, &mut name[..nlen])?;
             if n < nlen {
                 return Err(anyhow::anyhow!("truncated dir"));
             }

@@ -39,11 +39,7 @@ pub fn dos_time2ts(mtime: u16) -> Time {
 }
 /// Convert a DOS date to the UNIX format.
 pub fn dos_date2ts(mdate: u16) -> Time {
-    date2ts(
-        mdate as u32 & 0x1f,
-        mdate as u32 >> 5 & 0xf,
-        (mdate as u32 >> 9) + 1980,
-    )
+    date2ts(mdate as u32 & 0x1f, mdate as u32 >> 5 & 0xf, (mdate as u32 >> 9) + 1980)
 }
 
 #[cfg(test)]

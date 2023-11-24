@@ -70,9 +70,7 @@ impl<'a> VFatFS<'a> {
         if bpb.bytes_per_sector < 128 || !bpb.bytes_per_sector.is_power_of_two() {
             return Err(anyhow::anyhow!("bytes per sector"));
         }
-        if bpb.sectors_per_cluster == 0
-            || (bpb.sectors_per_cluster & (bpb.sectors_per_cluster - 1)) != 0
-        {
+        if bpb.sectors_per_cluster == 0 || (bpb.sectors_per_cluster & (bpb.sectors_per_cluster - 1)) != 0 {
             return Err(anyhow::anyhow!("bytes per cluster"));
         }
         if bpb.reserved_sectors == 0 {
@@ -93,12 +91,10 @@ impl<'a> VFatFS<'a> {
         let root_sectors = (((bpb.root_entries as u32) << 5) + (sector_size - 1)) / sector_size;
         let sectors_per_cluster = bpb.sectors_per_cluster as u32;
         let mut fat_start_sector = bpb.reserved_sectors as u32;
-        let root_start =
-            fat_start_sector + (bpb.num_fats as u32) * (left_or(bpb.fat_size16, ebp32.fat_size32));
+        let root_start = fat_start_sector + (bpb.num_fats as u32) * (left_or(bpb.fat_size16, ebp32.fat_size32));
         let data_start = (root_start + root_sectors) as Offset * sector_size as Offset;
-        let clusters = (left_or(bpb.total_sectors16, bpb.total_sectors32)
-            - (root_start + root_sectors))
-            / sectors_per_cluster;
+        let clusters =
+            (left_or(bpb.total_sectors16, bpb.total_sectors32) - (root_start + root_sectors)) / sectors_per_cluster;
         let fat_type = match clusters {
             x if x < 4085 => 12,
             x if x < 65525 => 16,
@@ -112,17 +108,10 @@ impl<'a> VFatFS<'a> {
         };
 
         // check for active fat
-        if fat_type == 32
-            && (ebp32.ext_flags & 0x80) != 0
-            && ebp32.ext_flags & 0xf < bpb.num_fats as u16
-        {
+        if fat_type == 32 && (ebp32.ext_flags & 0x80) != 0 && ebp32.ext_flags & 0xf < bpb.num_fats as u16 {
             fat_start_sector += ((ebp32.ext_flags & 0xf) as u32) * ebp32.fat_size32
         }
-        let root_cluster = if fat_type == 32 {
-            ebp32.root_cluster
-        } else {
-            0
-        };
+        let root_cluster = if fat_type == 32 { ebp32.root_cluster } else { 0 };
 
         Ok(Self {
             disk,

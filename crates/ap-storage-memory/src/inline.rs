@@ -49,9 +49,7 @@ impl<'a, const N: usize> InlineCacheImpl<'a, N> {
 
         // read a whole block
         self.offset = ofs - ofs_in_block;
-        self.valid = self
-            .parent
-            .read_bytes(ofs - ofs_in_block, &mut self.buffer)?;
+        self.valid = self.parent.read_bytes(ofs - ofs_in_block, &mut self.buffer)?;
         Ok(self.read_from_buffer(ofs, buf))
     }
 }

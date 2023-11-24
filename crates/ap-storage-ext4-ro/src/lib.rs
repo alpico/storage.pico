@@ -35,16 +35,9 @@ impl<'a> Ext4Fs<'a> {
         }
 
         // support FILETYPE, META_BG, EXTENTS, 64BIT and ignore RECOVER, JOURNAL_DEV, FLEX_BG
-        let feature_incompat = if cfg!(feature = "file_extents") {
-            0xd2
-        } else {
-            0x92
-        };
+        let feature_incompat = if cfg!(feature = "file_extents") { 0xd2 } else { 0x92 };
         if sb.feature_incompat & !(feature_incompat | 0x20c) != 0 {
-            return Err(anyhow::anyhow!(
-                "incompatible features {:x}",
-                sb.feature_incompat
-            ));
+            return Err(anyhow::anyhow!("incompatible features {:x}", sb.feature_incompat));
         }
         Ok(Self {
             disk,
@@ -86,10 +79,8 @@ impl<'a> Ext4Fs<'a> {
         // The inode might be smaller on disk due to backward compatiblity.
         let mut buf = [0u8; core::mem::size_of::<Inode>()];
         let n = core::cmp::min(core::mem::size_of::<Inode>(), self.sb.inode_size() as usize);
-        self.disk.read_exact(
-            inode_block * self.sb.block_size() + inode_ofs,
-            &mut buf[..n],
-        )?;
+        self.disk
+            .read_exact(inode_block * self.sb.block_size() + inode_ofs, &mut buf[..n])?;
         Ok(unsafe { core::mem::transmute(buf) })
     }
 }

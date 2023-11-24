@@ -2,9 +2,7 @@
 #![no_std]
 
 use ap_storage::{Error, Write, WriteExt};
-use ap_storage_vfat::{
-    BiosParameterBlock, ExtBiosParameterBlock16, ExtBiosParameterBlock32, Variant,
-};
+use ap_storage_vfat::{BiosParameterBlock, ExtBiosParameterBlock16, ExtBiosParameterBlock32, Variant};
 
 /// A VFAT builder.
 #[derive(Debug, Clone, Copy)]
@@ -58,25 +56,22 @@ macro_rules! setter {
             self.$name = v;
             *self
         }
-    }
+    };
 }
-
 
 impl MakeVFatFS {
     setter!(drive, u8, "BIOS drive number.");
     setter!(align, bool, "Align the data area to the cluster.");
     setter!(media, u8, "Media type.");
     setter!(volume_id, u32, "Identification of the filesystem.");
-    setter!(root_entries, u16, "Minimum number of root entries for fat12 and fat16 variants.");
+    setter!(root_entries, u16, "Minimum number of root entries for fat12 and fat16.");
     setter!(num_fats, u8, "Number of FAT copies. Zero means one.");
     setter!(reserved, u16, "Number of reserved sectors at the start of the disk.");
 
     /// The size of the sector in bytes. Must be a power of two and at least 128.
     pub fn sector_size(&mut self, v: u16) -> Result<Self, Error> {
         if !v.is_power_of_two() || v < 128 {
-            return Err(anyhow::anyhow!(
-                "sector_size must be a power of two and at least 128",
-            ));
+            return Err(anyhow::anyhow!("sector_size must be a power of two and at least 128",));
         }
         self.sector_size = v;
         Ok(*self)
@@ -85,9 +80,7 @@ impl MakeVFatFS {
     /// Sectors per cluster. A power of two larger than 0.
     pub fn per_cluster(&mut self, v: u8) -> Result<Self, Error> {
         if !v.is_power_of_two() || v == 0 {
-            return Err(anyhow::anyhow!(
-                "per_clusters must be one of [1,2,4,8,16,32,64,128]"
-            ));
+            return Err(anyhow::anyhow!("per_clusters must be one of [1,2,4,8,16,32,64,128]"));
         }
         self.per_cluster = v;
         Ok(*self)
@@ -120,11 +113,8 @@ impl MakeVFatFS {
     pub fn calc_variant(&self, bytes: u64) -> Result<(Variant, u64), Error> {
         let sector_size = self.sector_size as u64;
         let reserved_sectors = core::cmp::max(self.reserved, 1) as u64;
-        let root_sectors = (self
-            .root_entries
-            .next_multiple_of((sector_size / 32) as u16) as u64
-            * 32)
-            .div_ceil(sector_size);
+        let root_sectors =
+            (self.root_entries.next_multiple_of((sector_size / 32) as u16) as u64 * 32).div_ceil(sector_size);
         let sectors = bytes / sector_size;
         let per_cluster = self.per_cluster as u64;
         let num_fats = self.num_fats as u64;
@@ -133,8 +123,7 @@ impl MakeVFatFS {
         let available_sectors = sectors - reserved_sectors - root_sectors;
 
         // number of fat-entries needed
-        let fat_size12 =
-            available_sectors.div_ceil(sector_size * per_cluster * 2 / 3 + num_fats - 1);
+        let fat_size12 = available_sectors.div_ceil(sector_size * per_cluster * 2 / 3 + num_fats - 1);
         let cluster12 = (available_sectors - fat_size12 * num_fats) / per_cluster;
         if cluster12 < 4085 {
             return Ok((Variant::Fat12, fat_size12));
@@ -166,62 +155,50 @@ impl MakeVFatFS {
         let sectors = size / sector_size;
         let reserved_sectors = core::cmp::max(self.reserved, 1);
         let num_fats = core::cmp::max(self.num_fats, 1);
-        let root_entries = self
-            .root_entries
-            .next_multiple_of((sector_size / 32) as u16);
+        let root_entries = self.root_entries.next_multiple_of((sector_size / 32) as u16);
 
         let mut bpb = BiosParameterBlock {
             oem: self.oem,
-            bytes_per_sector: sector_size as u16,
+            bytes_per_sector: self.sector_size,
             sectors_per_cluster: self.per_cluster,
             reserved_sectors,
             num_fats,
-            root_entries: if variant != Variant::Fat32 {
-                root_entries
-            } else {
-                0
-            },
-            total_sectors16: sectors.try_into().unwrap_or(0),
-            total_sectors32: if sectors >= 0x10000 {
-                sectors.try_into().map_err(|_| anyhow::anyhow!("to huge"))?
-            } else {
-                0
-            },
             media: self.media,
-            fat_size16: if variant != Variant::Fat32 {
-                fat_size as u16
-            } else {
-                0
-            },
             ..BiosParameterBlock::default()
+        };
+        if sectors < 0x10000 {
+            bpb.total_sectors16 = sectors as u16;
+        } else {
+            bpb.total_sectors32 = sectors.try_into().map_err(|_| anyhow::anyhow!("to huge"))?
+        }
+        if variant != Variant::Fat32 {
+            bpb.root_entries = root_entries;
+            bpb.fat_size16 = fat_size as u16;
         };
 
         let data_start = bpb.reserved_sectors as u64
             + fat_size * num_fats as u64
             + (bpb.root_entries as u64 * 32).div_ceil(sector_size);
 
-        // align the data-area to a cluster
+        // align the data-area to the next cluster
         if self.align {
-            bpb.reserved_sectors +=
-                (data_start.next_multiple_of(self.per_cluster as u64) - data_start) as u16;
+            bpb.reserved_sectors += (data_start.next_multiple_of(self.per_cluster as u64) - data_start) as u16;
         }
 
-        // clear Reserved, FAT and the root directory area
+        // clear the Reserved, FAT and Root Directory area
         let root_sectors = (bpb.root_entries as u64 * 32).div_ceil(sector_size);
-        disk.discard_all(
-            0,
-            (bpb.reserved_sectors as u64 + fat_size * num_fats as u64 + root_sectors) * sector_size,
-        )?;
+        let clear_sectors = bpb.reserved_sectors as u64 + fat_size * num_fats as u64 + root_sectors;
+        disk.discard_all(0, clear_sectors * sector_size)?;
 
         // write the parameter blocks
         disk.write_object(0, bpb)?;
         let ebp16 = ExtBiosParameterBlock16 {
             drive: self.drive,
-            res: 0,
             bootsig: 0x29,
             volume_id: self.volume_id,
             volume_label: self.label,
             filesys_type: Self::filesys_type(variant),
+            ..ExtBiosParameterBlock16::default()
         };
         // the boot magic
         disk.write_object(0x1fe, 0xaa55u16)?;
@@ -229,20 +206,17 @@ impl MakeVFatFS {
         if variant != Variant::Fat32 {
             disk.write_object(36, ebp16)?;
         } else {
-            let ebp32 = ExtBiosParameterBlock32 {
+            let mut ebp32 = ExtBiosParameterBlock32 {
                 fat_size32: fat_size as u32,
                 ext_flags: 0x80,
-                version: 0,
                 root_cluster: 2,
-                fs_info: if sector_size >= 512 && bpb.reserved_sectors > 1 {
-                    1
-                } else {
-                    0
-                },
                 backup_boot: if bpb.reserved_sectors > 6 { 6 } else { 0 },
-                res: [0; 12],
                 ext: ebp16,
+                ..ExtBiosParameterBlock32::default()
             };
+            if sector_size >= 512 && bpb.reserved_sectors > 1 {
+                ebp32.fs_info = 1;
+            }
             disk.write_object(36, ebp32)?;
 
             // write the FSINFO structure
@@ -252,7 +226,7 @@ impl MakeVFatFS {
                 disk.write_object(ofs, 0x41615252u32)?;
                 disk.write_object(ofs + 484, 0x61417272u32)?;
                 disk.write_object(ofs + 488, cluster - 1)?;
-                disk.write_object(ofs + 492, 3)?;
+                disk.write_object(ofs + 492, 3u32)?;
                 disk.write_object(ofs + 510, 0xaa55u16)?;
             }
 
@@ -278,4 +252,3 @@ impl MakeVFatFS {
         Ok(())
     }
 }
-

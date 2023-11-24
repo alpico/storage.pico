@@ -99,8 +99,7 @@ impl DirectoryEntry {
 
     /// Return the birth time in nanoseconds since 1970.
     pub fn btime(&self) -> Time {
-        (dos_date2ts(self.bdate) + dos_time2ts(self.btime)) * 1_000_000_000
-            + self.btenthms as Time * 10_000_000
+        (dos_date2ts(self.bdate) + dos_time2ts(self.btime)) * 1_000_000_000 + self.btenthms as Time * 10_000_000
     }
 }
 
@@ -138,7 +137,7 @@ pub struct BiosParameterBlock {
 }
 
 /// The extension as present on fat12 and fat16 volumes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(packed)]
 pub struct ExtBiosParameterBlock16 {
     pub drive: u8,
@@ -150,7 +149,7 @@ pub struct ExtBiosParameterBlock16 {
 }
 
 /// The extension as present on fat32 volumes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 #[repr(packed)]
 pub struct ExtBiosParameterBlock32 {
     pub fat_size32: u32,

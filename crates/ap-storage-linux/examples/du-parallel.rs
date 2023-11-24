@@ -82,9 +82,7 @@ fn main() -> Result<(), Error> {
     let make_state = |_| {
         WorkerState {
             // XXX we don't handle the lifetimes correctly
-            fs: Rc::new(
-                Ext4Fs::new(unsafe { std::mem::transmute(disk) }, opts.leaf_optimization).unwrap(),
-            ),
+            fs: Rc::new(Ext4Fs::new(unsafe { std::mem::transmute(disk) }, opts.leaf_optimization).unwrap()),
             size: 0,
             count: 0,
         }

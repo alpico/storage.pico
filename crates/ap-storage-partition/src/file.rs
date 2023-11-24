@@ -55,10 +55,7 @@ impl File for PartitionFile<'_> {
         let len = if offset >= self.offset + self.len {
             0
         } else {
-            core::cmp::min(
-                self.offset + self.len - offset,
-                (partition.size as u64) * 512,
-            )
+            core::cmp::min(self.offset + self.len - offset, (partition.size as u64) * 512)
         };
 
         Ok(PartitionFile {

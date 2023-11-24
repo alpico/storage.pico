@@ -33,9 +33,7 @@ impl ReadExt for &dyn Read {
     }
     fn read_object<T: Sized>(&self, offset: Offset) -> Result<T, Error> {
         let mut res = MaybeUninit::uninit();
-        let buf = unsafe {
-            core::slice::from_raw_parts_mut(res.as_mut_ptr() as *mut u8, core::mem::size_of::<T>())
-        };
+        let buf = unsafe { core::slice::from_raw_parts_mut(res.as_mut_ptr() as *mut u8, core::mem::size_of::<T>()) };
 
         self.read_exact(offset, buf)?;
         Ok(unsafe { res.assume_init() })

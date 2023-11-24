@@ -48,9 +48,7 @@ impl<'a> Dir<'a> {
 
             for ch in char::decode_utf16(lentry.name()) {
                 let mut buf = [0u8; 4];
-                let r = ch
-                    .unwrap_or(char::REPLACEMENT_CHARACTER)
-                    .encode_utf8(&mut buf);
+                let r = ch.unwrap_or(char::REPLACEMENT_CHARACTER).encode_utf8(&mut buf);
                 if res + r.len() > name.len() {
                     return res;
                 }
@@ -77,8 +75,7 @@ impl<'a> Dir<'a> {
             }
 
             // non-continous entry, to-small or to much entries
-            if (x | 0x4000) != long_entries || !(0x4100..0x4000 + (21 << 8)).contains(&long_entries)
-            {
+            if (x | 0x4000) != long_entries || !(0x4100..0x4000 + (21 << 8)).contains(&long_entries) {
                 // signal that we skip these number of entries
                 next_offset = self.offset;
                 break;

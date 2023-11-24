@@ -31,12 +31,8 @@ impl<'a> PartitionFS<'a> {
             return Err(anyhow::anyhow!("not an MBR"));
         }
         // find the maximum length all partitions occupy
-        let primary: [Partition; 4] =
-            unsafe { core::ptr::read_unaligned(buf.as_ptr().add(0x1be).cast()) };
-        let len = primary
-            .iter()
-            .map(|x| x.lba + x.size)
-            .fold(0, core::cmp::max);
+        let primary: [Partition; 4] = unsafe { core::ptr::read_unaligned(buf.as_ptr().add(0x1be).cast()) };
+        let len = primary.iter().map(|x| x.lba + x.size).fold(0, core::cmp::max);
         Ok(Self {
             disk,
             len: (len as u64) * 512,

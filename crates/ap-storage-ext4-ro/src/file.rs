@@ -59,9 +59,7 @@ impl<'a> File for Ext4File<'a> {
     /// Return a iterator if this is a directory.
     type DirType<'c> = Dir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
-        if self.inode.ftype() == FileType::Directory
-            && (self.inode.version != 1 || !self.leaf_optimization)
-        {
+        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.leaf_optimization) {
             return Some(Dir::new(self));
         }
         None
@@ -116,10 +114,7 @@ impl<'a> Read for Ext4File<'a> {
 
         let (phys, max_blocks) = self.lookup_block(block_in_file)?;
 
-        let valid_size = core::cmp::min(
-            valid_size as Offset,
-            max_blocks * block_size - offset_in_block,
-        ) as usize;
+        let valid_size = core::cmp::min(valid_size as Offset, max_blocks * block_size - offset_in_block) as usize;
         let buf = &mut buf[..valid_size];
         if phys == 0 {
             buf.fill(0);

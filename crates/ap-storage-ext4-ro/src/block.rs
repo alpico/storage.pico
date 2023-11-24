@@ -62,17 +62,10 @@ impl<'a> Ext4Blocks<'a> {
         while level > 0 && res != 0 {
             let index = index_at_level(_block, level);
             if level != 1 || (index + Self::MAX_MERGED as u64) >> log_numbers_per_block > 0 {
-                res = self
-                    .0
-                    .fs
-                    .disk
-                    .read_object(res as u64 * block_size + index * 4)?;
+                res = self.0.fs.disk.read_object(res as u64 * block_size + index * 4)?;
             } else {
-                let blocks: [u32; Ext4Blocks::MAX_MERGED] = self
-                    .0
-                    .fs
-                    .disk
-                    .read_object(res as u64 * block_size + index * 4)?;
+                let blocks: [u32; Ext4Blocks::MAX_MERGED] =
+                    self.0.fs.disk.read_object(res as u64 * block_size + index * 4)?;
                 res = blocks[0];
                 cnt = Self::count_contigous(&blocks);
             }
