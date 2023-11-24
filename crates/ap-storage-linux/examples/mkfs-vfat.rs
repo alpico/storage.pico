@@ -24,32 +24,70 @@ use std::time::{SystemTime, UNIX_EPOCH};
 struct CommandOptions {
     /// Print the help message.
     help: bool,
-
+    /// Verbose output.
+    verbose: bool,
+    /// Do not write.
+    dry_run: bool,
     /// The bytes to skip in the disk file.
+    #[options(meta = "N")]
     offset: Offset,
 
-    /// BIOS drive number
+    /// BIOS drive number.
+    #[options(meta = "N")]
     drive: UnsetField<u8>,
-    /// Do not align the data area to the cluster.
+    /// Align the data area to the cluster.
     align: UnsetField<bool>,
     /// Media type
+    #[options(meta = "N")]
     media: UnsetField<u8>,
     /// Volume label.
     label: UnsetField<String>,
-    /// Number of fat copies.
+    /// Number of fat copies. Typically one or two.
+    #[options(meta = "N")]
     num_fats: UnsetField<u8>,
     /// OEM field.
     oem: UnsetField<String>,
-    /// One of [1,2,4,8,16,32,64,128].
+    /// Sectors per cluster. One of {1,2,4,8,16,32,64,128}.
+    #[options(meta = "N")]
     per_cluster: UnsetField<u8>,
     /// Minimum of reserved sectors.
+    #[options(meta = "N")]
     reserved: UnsetField<u16>,
     /// Number of root entries for fat12 and fat16 variants.
+    #[options(meta = "N")]
     root_entries: UnsetField<u16>,
     /// Power of two in the range[128,32768]. Typically 512 or 4096.
+    #[options(meta = "N")]
     sector_size: UnsetField<u16>,
     /// Volume id.
+    #[options(meta = "N")]
     volume_id: UnsetField<u32>,
+    /// Profile to start with. One of {default,tiny,small,compat,large,huge}.
+    #[options(parse(try_from_str="to_profile"))]
+    profile: Profile,
+}
+
+#[derive(Debug, Default)]
+enum Profile {
+    #[default]
+    Default,
+    Tiny,
+    Small,
+    Compat,
+    Large,
+    Huge,
+}
+
+fn to_profile(s: &str) -> Result<Profile, &str> {
+    match s {
+        "default" => Ok(Profile::Default),
+        "tiny" => Ok(Profile::Tiny),
+        "small" => Ok(Profile::Small),
+        "compat" => Ok(Profile::Compat),
+        "large" => Ok(Profile::Large),
+        "huge" => Ok(Profile::Huge),
+        _ => Err(s),
+    }
 }
 
 #[derive(PartialEq, Default, Debug)]
@@ -81,7 +119,14 @@ fn rand_volume_id() -> u32 {
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
 
-    let mut builder = MakeVFatFS::default();
+    let mut builder = match opts.profile {
+        Profile::Default => MakeVFatFS::default(),
+        Profile::Tiny => MakeVFatFS::tiny(),
+        Profile::Small => MakeVFatFS::small(),
+        Profile::Compat => MakeVFatFS::compat(),
+        Profile::Large => MakeVFatFS::large(),
+        Profile::Huge => MakeVFatFS::huge(),
+    };
     builder.volume_id(rand_volume_id());
     // let the options override the parameters
     opts.align.map(|v| builder.align(v));
@@ -100,7 +145,16 @@ fn main() -> Result<(), Error> {
         builder.sector_size(v)?;
     }
 
+    if opts.verbose {
+        println!("{builder:#?}");
+    }
+
     let disk = LinuxDiskRW::new("/dev/stdin", opts.offset)?;
     let r = &disk as &dyn Read;
-    builder.build(&disk, r.detect_size())
+    let sectors = r.detect_size() / builder.get_sector_size() as u64;
+    if opts.dry_run {
+        builder.calc_variant(sectors)?;
+        return Ok(())
+    }
+    builder.build(&disk, sectors)
 }

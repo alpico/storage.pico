@@ -21,6 +21,7 @@ pub struct MakeVFatFS {
 }
 
 impl Default for MakeVFatFS {
+    /// The default config with 4k clusters but only a single FAT.
     fn default() -> Self {
         Self {
             align: true,
@@ -29,7 +30,7 @@ impl Default for MakeVFatFS {
             media: 0xf8,
             num_fats: 1,
             oem: *b" alpico ",
-            per_cluster: 4,
+            per_cluster: 8,
             reserved: 1,
             root_entries: 0x200,
             sector_size: 512,
@@ -97,6 +98,53 @@ impl MakeVFatFS {
         self.oem = make_string(v);
         *self
     }
+
+    /// Return the sector size.
+    pub fn get_sector_size(&self) -> u16 {
+        self.sector_size
+    }
+
+    /// Profile for the smallest size with 128 byte sectors.
+    pub fn tiny() -> Self {
+        Self::default()
+            .align(false)
+            .num_fats(1)
+            .root_entries(1)
+            .per_cluster(1).unwrap()
+            .sector_size(128).unwrap()
+    }
+
+    /// Profile for a small size with 512 byte sectors.
+    pub fn small() -> Self {
+        Self::default()
+            .align(false)
+            .num_fats(1)
+            .root_entries(16)
+            .per_cluster(1).unwrap()
+    }
+
+    /// Profile for been most compatible (2TB).
+    pub fn compat() -> Self {
+        Self::default()
+            .reserved(8)
+            .num_fats(2)
+            .per_cluster(4).unwrap()
+            .sector_size(512).unwrap()
+    }
+    /// Profile for a large disk with 4k sectors and 64k clusters (16 TB).
+    pub fn large() -> Self {
+        Self::default()
+            .per_cluster(16).unwrap()
+            .sector_size(4096).unwrap()
+    }
+
+    /// Profile for a huge disk with 32k sectors and 4M clusters (128 TB).
+    pub fn huge() -> Self {
+        Self::default()
+            .per_cluster(128).unwrap()
+            .sector_size(32768).unwrap()
+    }
+
 }
 
 impl MakeVFatFS {
@@ -110,20 +158,23 @@ impl MakeVFatFS {
     }
 
     /// Calculate the variant and the fat-size in sectors.
-    pub fn calc_variant(&self, bytes: u64) -> Result<(Variant, u64), Error> {
+    pub fn calc_variant(&self, sectors: u64) -> Result<(Variant, u64), Error> {
         let sector_size = self.sector_size as u64;
         let reserved_sectors = core::cmp::max(self.reserved, 1) as u64;
         let root_sectors =
             (self.root_entries.next_multiple_of((sector_size / 32) as u16) as u64 * 32).div_ceil(sector_size);
-        let sectors = bytes / sector_size;
         let per_cluster = self.per_cluster as u64;
-        let num_fats = self.num_fats as u64;
+        let num_fats = core::cmp::max(self.num_fats, 1) as u64;
 
         // for the FAT12 and FAT16 variants the root-sectors have to be accounted for
-        let available_sectors = sectors - reserved_sectors - root_sectors;
+        let available_sectors = sectors - core::cmp::min(sectors, reserved_sectors + root_sectors);
+        if available_sectors < per_cluster + num_fats {
+            return Err(anyhow::anyhow!("not enough space"));
+        }
+
 
         // number of fat-entries needed
-        let fat_size12 = available_sectors.div_ceil(sector_size * per_cluster * 2 / 3 + num_fats - 1);
+        let fat_size12 = (available_sectors / per_cluster).div_ceil(sector_size  * 2 / 3 + num_fats);
         let cluster12 = (available_sectors - fat_size12 * num_fats) / per_cluster;
         if cluster12 < 4085 {
             return Ok((Variant::Fat12, fat_size12));
@@ -139,10 +190,10 @@ impl MakeVFatFS {
         // finally fat32
         let fat_size32 = sectors.div_ceil((sector_size / 4 * per_cluster) + num_fats);
         let cluster32 = (sectors - fat_size32 * num_fats) / per_cluster;
-        if cluster32 < 0xffffff5 {
+        if cluster32 < 0xffffff6 {
             return Ok((Variant::Fat32, fat_size32));
         }
-        Err(anyhow::anyhow!("no variant found"))
+        Err(anyhow::anyhow!("disk to large"))
     }
 
     /// Return the sector number where the data area starts without alignment.
@@ -155,13 +206,11 @@ impl MakeVFatFS {
     }
 
     /// Initialize the filesystem.
-    ///
-    /// The size is an extra parameter to use a fast way to retrieve it and for testing purposes.
-    pub fn build(&self, disk: &dyn Write, size: u64) -> Result<(), Error> {
-        let (variant, fat_size) = self.calc_variant(size)?;
-
+    pub fn build(&self, disk: &dyn Write, sectors: u64) -> Result<(), Error> {
         let sector_size = self.sector_size as u64;
-        let sectors = size / sector_size;
+        let (variant, fat_size) = self.calc_variant(sectors)?;
+
+
         let reserved_sectors = core::cmp::max(self.reserved, 1);
         let num_fats = core::cmp::max(self.num_fats, 1);
         let root_entries = self.root_entries.next_multiple_of((sector_size / 32) as u16);
