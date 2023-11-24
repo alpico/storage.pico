@@ -16,6 +16,7 @@
 use ap_storage::{Error, Offset, Read, ReadExt};
 use ap_storage_linux::LinuxDiskRW;
 use ap_storage_vfat_mkfs::MakeVFatFS;
+use core::str::FromStr;
 use gumdrop::Options;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -28,44 +29,44 @@ struct CommandOptions {
     offset: Offset,
 
     /// BIOS drive number
-    #[options(default = "128")]
-    drive: u8,
-
+    drive: UnsetField<u8>,
     /// Do not align the data area to the cluster.
-    no_align: bool,
-
+    align: UnsetField<bool>,
     /// Media type
-    #[options(default = "248")]
-    media: u8,
-
+    media: UnsetField<u8>,
     /// Volume label.
-    #[options(default = "NO NAME")]
-    label: String,
-
+    label: UnsetField<String>,
     /// Number of fat copies.
-    num_fats: u8,
-
+    num_fats: UnsetField<u8>,
     /// OEM field.
-    #[options(default = " alpico")]
-    oem: String,
-
+    oem: UnsetField<String>,
     /// One of [1,2,4,8,16,32,64,128].
-    #[options(default = "8")]
-    per_cluster: u8,
-
+    per_cluster: UnsetField<u8>,
     /// Minimum of reserved sectors.
-    reserved: u16,
-
+    reserved: UnsetField<u16>,
     /// Number of root entries for fat12 and fat16 variants.
-    #[options(default = "512")]
-    root_entries: u16,
-
-    /// Typically one of [512,1024,2048,4096] bytes.
-    #[options(default = "512")]
-    sector_size: u16,
-
+    root_entries: UnsetField<u16>,
+    /// Power of two in the range[128,32768]. Typically 512 or 4096.
+    sector_size: UnsetField<u16>,
     /// Volume id.
-    volume_id: u32,
+    volume_id: UnsetField<u32>,
+}
+
+#[derive(PartialEq, Default, Debug)]
+struct UnsetField<T>(Option<T>);
+
+impl<T> core::ops::Deref for UnsetField<T> {
+    type Target = Option<T>;
+    fn deref(&self) -> &Option<T> {
+        &self.0
+    }
+}
+
+impl<T: FromStr> FromStr for UnsetField<T> {
+    type Err = T::Err;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        Ok(Self(Some(T::from_str(s)?)))
+    }
 }
 
 /// Get a randomized volume ID.
@@ -79,22 +80,25 @@ fn rand_volume_id() -> u32 {
 
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
-    let builder = MakeVFatFS::default()
-        .align(!opts.no_align)
-        .drive(opts.drive)
-        .label(&opts.label)
-        .media(!opts.media)
-        .num_fats(opts.num_fats)
-        .oem(&opts.oem)
-        .per_cluster(opts.per_cluster)?
-        .reserved(opts.reserved)
-        .root_entries(opts.root_entries)
-        .sector_size(opts.sector_size)?
-        .volume_id(if opts.volume_id == 0 {
-            rand_volume_id()
-        } else {
-            opts.volume_id
-        });
+
+    let mut builder = MakeVFatFS::default();
+    builder.volume_id(rand_volume_id());
+    // let the options override the parameters
+    opts.align.map(|v| builder.align(v));
+    opts.drive.map(|v| builder.drive(v));
+    opts.label.as_ref().map(|v| builder.label(v));
+    opts.media.map(|v| builder.media(v));
+    opts.num_fats.map(|v| builder.num_fats(v));
+    opts.oem.as_ref().map(|v| builder.oem(v));
+    opts.reserved.map(|v| builder.reserved(v));
+    opts.root_entries.map(|v| builder.root_entries(v));
+    opts.volume_id.map(|v| builder.volume_id(v));
+    if let Some(v) = *opts.per_cluster {
+        builder.per_cluster(v)?;
+    }
+    if let Some(v) = *opts.sector_size {
+        builder.sector_size(v)?;
+    }
 
     let disk = LinuxDiskRW::new("/dev/stdin", opts.offset)?;
     let r = &disk as &dyn Read;

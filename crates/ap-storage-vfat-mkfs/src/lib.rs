@@ -7,7 +7,7 @@ use ap_storage_vfat::{
 };
 
 /// A VFAT builder.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct MakeVFatFS {
     align: bool,
     drive: u8,
@@ -40,98 +40,74 @@ impl Default for MakeVFatFS {
     }
 }
 
+/// Convert a string into a fixed array of bytes.
+///
+/// The string is padded with spaces and truncated if too long.
+fn make_string<const C: usize>(v: &str) -> [u8; C] {
+    let n = core::cmp::min(C, v.as_bytes().len());
+    let mut res = [b' '; C];
+    res[..n].copy_from_slice(&v.as_bytes()[..n]);
+    res
+}
+
+/// A macro to generate the setters.
+macro_rules! setter {
+    ($name:ident, $typ:ty, $doc:literal) => {
+        #[doc=$doc]
+        pub fn $name(&mut self, v: $typ) -> Self {
+            self.$name = v;
+            *self
+        }
+    }
+}
+
+
 impl MakeVFatFS {
-    /// Set BIOS drive number.
-    pub fn drive(self, v: u8) -> Self {
-        Self { drive: v, ..self }
-    }
+    setter!(drive, u8, "BIOS drive number.");
+    setter!(align, bool, "Align the data area to the cluster.");
+    setter!(media, u8, "Media type.");
+    setter!(volume_id, u32, "Identification of the filesystem.");
+    setter!(root_entries, u16, "Minimum number of root entries for fat12 and fat16 variants.");
+    setter!(num_fats, u8, "Number of FAT copies. Zero means one.");
+    setter!(reserved, u16, "Number of reserved sectors at the start of the disk.");
 
-    /// Align the data area to the cluster.
-    pub fn align(self, v: bool) -> Self {
-        Self { align: v, ..self }
-    }
-
-    /// Media type.
-    pub fn media(self, v: u8) -> Self {
-        Self { drive: v, ..self }
-    }
-
-    /// The size of the sector in bytes.
-    pub fn sector_size(self, v: u16) -> Result<Self, Error> {
+    /// The size of the sector in bytes. Must be a power of two and at least 128.
+    pub fn sector_size(&mut self, v: u16) -> Result<Self, Error> {
         if !v.is_power_of_two() || v < 128 {
             return Err(anyhow::anyhow!(
-                "sector_size must be a power of two and larger than 128",
+                "sector_size must be a power of two and at least 128",
             ));
         }
-        Ok(Self {
-            sector_size: v,
-            ..self
-        })
+        self.sector_size = v;
+        Ok(*self)
     }
 
-    /// Sectors per cluster. One of [1,2,4,8,16,32,64,128].
-    pub fn per_cluster(self, v: u8) -> Result<Self, Error> {
+    /// Sectors per cluster. A power of two larger than 0.
+    pub fn per_cluster(&mut self, v: u8) -> Result<Self, Error> {
         if !v.is_power_of_two() || v == 0 {
             return Err(anyhow::anyhow!(
                 "per_clusters must be one of [1,2,4,8,16,32,64,128]"
             ));
         }
-        Ok(Self {
-            per_cluster: v,
-            ..self
-        })
+        self.per_cluster = v;
+        Ok(*self)
     }
 
     /// Volume label.
-    pub fn label(self, v: &str) -> Self {
-        Self {
-            label: make_string(v),
-            ..self
-        }
+    pub fn label(&mut self, v: &str) -> Self {
+        self.label = make_string(v);
+        *self
     }
 
     /// OEM field.
-    pub fn oem(self, v: &str) -> Self {
-        Self {
-            oem: make_string(v),
-            ..self
-        }
-    }
-
-    /// Volume id.
-    pub fn volume_id(self, v: u32) -> Self {
-        Self {
-            volume_id: v,
-            ..self
-        }
-    }
-
-    /// Minimum number of root entries for fat12 and fat16 variants.
-    pub fn root_entries(self, v: u16) -> Self {
-        Self {
-            root_entries: v,
-            ..self
-        }
-    }
-
-    /// Number of fat copies.
-    pub fn num_fats(self, v: u8) -> Self {
-        Self {
-            num_fats: v,
-            ..self
-        }
-    }
-
-    /// Minimum of reserved sectors.
-    pub fn reserved(self, v: u16) -> Self {
-        Self {
-            reserved: v,
-            ..self
-        }
+    pub fn oem(&mut self, v: &str) -> Self {
+        self.oem = make_string(v);
+        *self
     }
 }
 
 impl MakeVFatFS {
+    /// Map the variant to a string.
     fn filesys_type(v: Variant) -> [u8; 8] {
         match v {
             Variant::Fat12 => *b"FAT12   ",
@@ -303,12 +279,3 @@ impl MakeVFatFS {
     }
 }
 
-/// Convert a string into a fixed array of bytes.
-///
-/// The string is padded with spaces and truncated if too long.
-fn make_string<const C: usize>(v: &str) -> [u8; C] {
-    let n = core::cmp::min(C, v.as_bytes().len());
-    let mut res = [b' '; C];
-    res[..n].copy_from_slice(&v.as_bytes()[..n]);
-    res
-}
