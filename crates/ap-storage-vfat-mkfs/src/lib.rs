@@ -145,6 +145,15 @@ impl MakeVFatFS {
         Err(anyhow::anyhow!("no variant found"))
     }
 
+    /// Return the sector number where the data area starts without alignment.
+    pub fn data_start(&self, variant: Variant, fat_size: u64) -> u64 {
+        let mut res = self.reserved as u64 + fat_size * self.num_fats as u64;
+        if variant != Variant::Fat32 {
+            res += (self.root_entries as u64 * 32).div_ceil(self.sector_size as u64);
+        }
+        res
+    }
+
     /// Initialize the filesystem.
     ///
     /// The size is an extra parameter to use a fast way to retrieve it and for testing purposes.
@@ -176,12 +185,9 @@ impl MakeVFatFS {
             bpb.fat_size16 = fat_size as u16;
         };
 
-        let data_start = bpb.reserved_sectors as u64
-            + fat_size * num_fats as u64
-            + (bpb.root_entries as u64 * 32).div_ceil(sector_size);
-
-        // align the data-area to the next cluster
+        let data_start = self.data_start(variant, fat_size);
         if self.align {
+            // align the data-area to the next cluster by reserving more sectors
             bpb.reserved_sectors += (data_start.next_multiple_of(self.per_cluster as u64) - data_start) as u16;
         }
 
