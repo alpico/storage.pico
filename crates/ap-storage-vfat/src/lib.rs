@@ -60,9 +60,9 @@ impl DirectoryEntry {
             // But there will never be more then 64k entries per directory.
             res = 65536 * 32
         }
-        if cfg!(features="fat-plus") {
+        if cfg!(features = "fat-plus") {
             let extra = (self.res & 0x7) | (self.res & 0xd >> 2);
-            return res as u64 |  (extra as u64) << 32;
+            return res as u64 | (extra as u64) << 32;
         }
         res as u64
     }

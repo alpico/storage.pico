@@ -36,7 +36,7 @@ impl<'a> File<'a> {
     }
 
     fn size(&self) -> Offset {
-        let res = self.inode.size().into();
+        let res = self.inode.size();
         if !self.inode.is_dir() || res < 2 << 20 {
             return res;
         }
@@ -96,7 +96,7 @@ impl<'a> ap_storage::file::File for File<'a> {
 impl Read for File<'_> {
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
         let size = self.inode.size();
-        if offset >= size.into() {
+        if offset >= size {
             return Ok(0);
         }
 

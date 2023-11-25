@@ -117,7 +117,10 @@ impl<'a> VFatFS<'a> {
         if variant == Variant::Fat32 && (ebp32.ext_flags & 0x80) != 0 && ebp32.ext_flags & 0xf < bpb.num_fats as u16 {
             fat_start_sector += ((ebp32.ext_flags & 0xf) as u32) * ebp32.fat_size32
         }
-        let root_cluster = if variant == Variant::Fat32 { ebp32.root_cluster } else { 0 };
+        let root_cluster = match variant {
+            Variant::Fat32 => ebp32.root_cluster,
+            _ => 0,
+        };
 
         Ok(Self {
             disk,

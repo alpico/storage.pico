@@ -35,7 +35,7 @@ impl<'a> Dir<'a> {
     }
 
     /// Retrieve the long-name from the entries and put it into the name.
-    #[cfg(feature="long-name")]
+    #[cfg(feature = "long-name")]
     fn handle_long_name(&self, next_offset: u64, name: &mut [u8]) -> usize {
         let mut res = 0;
         // look at the long-entries
@@ -60,7 +60,7 @@ impl<'a> Dir<'a> {
     }
 
     /// Detect a longname and return the real entry.
-    #[cfg(feature="long-name")]
+    #[cfg(feature = "long-name")]
     fn detect_longname(&mut self) -> Result<(DirectoryEntry, Offset), Error> {
         let mut entry = self.get_next()?;
         let mut next_offset = self.offset;
@@ -95,9 +95,9 @@ impl<'a> Dir<'a> {
 
 impl<'a> directory::Iterator for Dir<'a> {
     fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
-        #[cfg(not(feature="long-name"))]
+        #[cfg(not(feature = "long-name"))]
         let entry = self.get_next()?;
-        #[cfg(feature="long-name")]
+        #[cfg(feature = "long-name")]
         let (entry, next_offset) = self.detect_longname()?;
 
         // end-of-directory?
@@ -116,7 +116,7 @@ impl<'a> directory::Iterator for Dir<'a> {
 
         // get the long-name if present
         let mut nlen = 0;
-        #[cfg(not(feature="ignore-long-name"))]
+        #[cfg(not(feature = "ignore-long-name"))]
         if !self.file.fs.options.ignore_long_name {
             nlen = self.handle_long_name(next_offset, name)
         };
