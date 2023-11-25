@@ -9,3 +9,7 @@ edition = "2021"
 anyhow = { version = "1.0.75", default-features = false }
 ap-storage={ path = "../ap-storage"}
 ap-storage-vfat={ path = "../ap-storage-vfat"}
+
+[features]
+default=["long-name"]
+long-name = []

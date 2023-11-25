@@ -2,7 +2,6 @@
 
 use super::{file::File, DirectoryEntry, Error, Offset};
 use ap_storage::{directory, meta::FileType, Read, ReadExt};
-use ap_storage_vfat::LongEntry;
 
 pub struct Dir<'a> {
     file: &'a File<'a>,
@@ -36,6 +35,7 @@ impl<'a> Dir<'a> {
     }
 
     /// Retrieve the long-name from the entries and put it into the name.
+    #[cfg(feature="long-name")]
     fn handle_long_name(&self, next_offset: u64, name: &mut [u8]) -> usize {
         let mut res = 0;
         // look at the long-entries
@@ -44,7 +44,7 @@ impl<'a> Dir<'a> {
             let Ok(e) = self.get_abs(self.offset - 2 - i) else {
                 return 0;
             };
-            let lentry: LongEntry = unsafe { core::mem::transmute(e) };
+            let lentry: ap_storage_vfat::LongEntry = unsafe { core::mem::transmute(e) };
 
             for ch in char::decode_utf16(lentry.name()) {
                 let mut buf = [0u8; 4];
@@ -60,12 +60,13 @@ impl<'a> Dir<'a> {
     }
 
     /// Detect a longname and return the real entry.
+    #[cfg(feature="long-name")]
     fn detect_longname(&mut self) -> Result<(DirectoryEntry, Offset), Error> {
         let mut entry = self.get_next()?;
         let mut next_offset = self.offset;
         let mut long_entries = 0;
         while entry.attr & 0x3f == 0xf {
-            let lentry: LongEntry = unsafe { core::mem::transmute(entry) };
+            let lentry: ap_storage_vfat::LongEntry = unsafe { core::mem::transmute(entry) };
             // combine different fields into one value to simplify the valid checks
             let x = ((lentry.typ as u32) << 16) | ((lentry.ord as u32) << 8) | lentry.cksum as u32;
             if x & 0x4000 != 0 {
@@ -94,6 +95,9 @@ impl<'a> Dir<'a> {
 
 impl<'a> directory::Iterator for Dir<'a> {
     fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
+        #[cfg(not(feature="long-name"))]
+        let entry = self.get_next()?;
+        #[cfg(feature="long-name")]
         let (entry, next_offset) = self.detect_longname()?;
 
         // end-of-directory?
@@ -111,10 +115,10 @@ impl<'a> directory::Iterator for Dir<'a> {
         };
 
         // get the long-name if present
-        let mut nlen = if self.file.fs.options.ignore_long_name {
-            0
-        } else {
-            self.handle_long_name(next_offset, name)
+        let mut nlen = 0;
+        #[cfg(not(feature="ignore-long-name"))]
+        if !self.file.fs.options.ignore_long_name {
+            nlen = self.handle_long_name(next_offset, name)
         };
 
         // take the short-name if no long-name was found.

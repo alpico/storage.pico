@@ -1,4 +1,8 @@
 //! On-disk structures for FAT filesystems.
+//!
+//! ## Features
+//! - `fat-plus` - support upto 256 GB large files
+
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
@@ -49,14 +53,18 @@ impl DirectoryEntry {
     }
 
     /// Calculate the size of the file.
-    pub fn size(&self) -> u32 {
+    pub fn size(&self) -> u64 {
         let mut res = unsafe { core::ptr::read_unaligned(core::ptr::addr_of!(self.size)) };
         if self.is_dir() && res == 0 {
             // The size of a directory is typically zero.
             // But there will never be more then 64k entries per directory.
             res = 65536 * 32
         }
-        res
+        if cfg!(features="fat-plus") {
+            let extra = (self.res & 0x7) | (self.res & 0xd >> 2);
+            return res as u64 |  (extra as u64) << 32;
+        }
+        res as u64
     }
 
     /// Returns the short-name of the directory.

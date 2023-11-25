@@ -1,4 +1,11 @@
-//! Read from fat{12,16,32} filesystem.
+//! Read from FAT filesystem.
+//!
+//! - support for FAT 12,16,32
+//! - `long-name` feature for larger filename
+//! - wide-range of sectors - 128 to 32k
+//! - huge clusters - upto 4M
+//! - files upto 256GB with the `fat-plus` feature.
+
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
@@ -70,7 +77,7 @@ impl<'a> VFatFS<'a> {
         if bpb.bytes_per_sector < 128 || !bpb.bytes_per_sector.is_power_of_two() {
             return Err(anyhow::anyhow!("bytes per sector"));
         }
-        if bpb.sectors_per_cluster == 0 || (bpb.sectors_per_cluster & (bpb.sectors_per_cluster - 1)) != 0 {
+        if bpb.sectors_per_cluster == 0 || !bpb.sectors_per_cluster.is_power_of_two() {
             return Err(anyhow::anyhow!("bytes per cluster"));
         }
         if bpb.reserved_sectors == 0 {
@@ -83,7 +90,7 @@ impl<'a> VFatFS<'a> {
             return Err(anyhow::anyhow!("media byte"));
         }
 
-        // select the 16-bit or 32-bit version
+        // select the 16-bit or 32-bit version of a field
         let left_or = |x, y| if x == 0 { y } else { x as u32 };
 
         // calculate the constants
