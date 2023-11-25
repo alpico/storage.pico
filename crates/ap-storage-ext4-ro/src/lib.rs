@@ -7,6 +7,7 @@
 
 #![no_std]
 
+mod attr;
 pub(crate) mod block;
 mod dir;
 pub(crate) mod extent;

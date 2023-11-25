@@ -6,7 +6,7 @@ use ap_storage::meta::FileType;
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
 pub struct Inode {
-    mode: u16,
+    pub mode: u16,
     _0: u16,
     size_lo: u32,
     atime: u32,
@@ -70,8 +70,16 @@ impl Inode {
         self.mtime as i64 * 1_000_000_000 + self.mtime_extra as i64
     }
 
+    pub fn atime(&self) -> i64 {
+        self.atime as i64 * 1_000_000_000 + self.atime_extra as i64
+    }
+
     pub fn btime(&self) -> i64 {
         self.crtime as i64 * 1_000_000_000 + self.crtime_extra as i64
+    }
+
+    pub fn dtime(&self) -> i64 {
+        self.dtime as i64 * 1_000_000_000
     }
 
     /// Get the number of blocks.
