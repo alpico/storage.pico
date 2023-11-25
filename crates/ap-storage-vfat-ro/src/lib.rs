@@ -30,10 +30,10 @@ pub struct VFatFS<'a> {
     disk: &'a dyn Read,
     /// bytes per cluster.
     block_size: u32,
-    /// The number of clusters.
-    blocks: u32,
-    /// The filesystem type: 12,16 or 32.
-    fat_type: u32,
+    /// The number of clusters in the data-area.
+    clusters: u32,
+    /// The filesystem variant.
+    variant: Variant,
     /// The offset where the FAT starts.
     fat_start: Offset,
     /// The mask for the FAT entries.
@@ -56,8 +56,8 @@ impl core::fmt::Debug for VFatFS<'_> {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             fmt,
-            "VFatFS{}(uuid {:x?}, bs {})",
-            self.fat_type, self.uuid, self.block_size
+            "VFatFS{}( uuid {:x?}, bs {})",
+            self.variant as usize, self.uuid, self.block_size
         )
     }
 }
@@ -102,30 +102,29 @@ impl<'a> VFatFS<'a> {
         let data_start = (root_start + root_sectors) as Offset * sector_size as Offset;
         let clusters =
             (left_or(bpb.total_sectors16, bpb.total_sectors32) - (root_start + root_sectors)) / sectors_per_cluster;
-        let fat_type = match clusters {
-            x if x < 4085 => 12,
-            x if x < 65525 => 16,
-            _ => 32,
+        let variant = match clusters {
+            x if x < 4085 => Variant::Fat12,
+            x if x < 65525 => Variant::Fat16,
+            _ => Variant::Fat32,
         };
-        let fat_mask = 0x0fffffff & (!0u32 >> (32 - fat_type));
-        let uuid = if fat_type == 32 {
-            ebp32.ext.volume_id
-        } else {
-            ebp16.volume_id
+        let fat_mask = 0x0fffffff & (!0u32 >> (32 - variant as u32));
+        let uuid = match variant {
+            Variant::Fat32 => ebp32.ext.volume_id,
+            _ => ebp16.volume_id,
         };
 
         // check for active fat
-        if fat_type == 32 && (ebp32.ext_flags & 0x80) != 0 && ebp32.ext_flags & 0xf < bpb.num_fats as u16 {
+        if variant == Variant::Fat32 && (ebp32.ext_flags & 0x80) != 0 && ebp32.ext_flags & 0xf < bpb.num_fats as u16 {
             fat_start_sector += ((ebp32.ext_flags & 0xf) as u32) * ebp32.fat_size32
         }
-        let root_cluster = if fat_type == 32 { ebp32.root_cluster } else { 0 };
+        let root_cluster = if variant == Variant::Fat32 { ebp32.root_cluster } else { 0 };
 
         Ok(Self {
             disk,
             block_size: sector_size * sectors_per_cluster,
-            blocks: clusters,
+            clusters,
             data_start,
-            fat_type,
+            variant,
             fat_start: fat_start_sector as Offset * sector_size as Offset,
             fat_mask,
             root_start: root_start as Offset * sector_size as Offset,
@@ -138,19 +137,18 @@ impl<'a> VFatFS<'a> {
 
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
-        if cluster == 0 || cluster >= self.blocks {
+        if cluster == 0 || cluster > self.clusters + 2 {
             return Err(anyhow::anyhow!("eof"));
         }
-        let ofs = self.fat_start + cluster as Offset * self.fat_type as Offset / 8;
+        let ofs = self.fat_start + cluster as Offset * self.variant as Offset / 8;
 
-        let mut value = if self.fat_type == 32 {
-            self.disk.read_object::<u32>(ofs)?
-        } else {
-            self.disk.read_object::<u16>(ofs)? as u32
+        let mut value = match self.variant {
+            Variant::Fat32 => self.disk.read_object::<u32>(ofs)?,
+            _ => self.disk.read_object::<u16>(ofs)? as u32,
         };
 
         // this is the odd-case
-        if self.fat_type == 12 && cluster & 1 != 0 {
+        if self.variant == Variant::Fat12 && cluster & 1 != 0 {
             value >>= 4;
         }
         Ok(value & self.fat_mask)
