@@ -57,13 +57,11 @@ We have examples of the implementation of tools using our storage interface.
 ## Roadmap
 
 - [ ] pseudo disks
-  - [ ] /dev/null
-  - [ ] /dev/zero
+  - [ ] /dev/zero - read returns nul-bytes, writes are ok
   - [ ] concat aka RAID0
 - [x] unified FS - Use a single struct for interacting with any supported filesystem
   - [ ] introduce derive macro to specialize the implementation
 - [x] partition support
   - [ ] follow extended/logical partitions
-- [ ] extensible metadata
 - [ ] external memory cache
   - [ ] support multiple ways

@@ -21,18 +21,27 @@ impl<'a> attr::Attributes for Attr<'a> {
         let mut value = SliceWriter(value, 0);
 
         macro_rules! get {
-            ($name:ident, $value:expr) => {{
+            ($name:ident) => {{
                 core::write!(&mut name, stringify!($name))?;
-                core::write!(&mut value, "{:x}", $value)?;
+                core::write!(&mut value, "{:x}", self.file.inode.$name())?;
             }};
         }
         match self.offset {
-            0 => get!(blocks, self.file.inode.blocks(self.file.fs.sb.block_size())),
-            1 => get!(nlinks, self.file.inode.nlinks()),
-            2 => get!(mode, self.file.inode.mode),
-            3 => get!(version, self.file.inode.version),
-            4 => get!(btime, self.file.inode.btime()),
-            5 => get!(atime, self.file.inode.atime()),
+            0 => {
+                core::write!(&mut name, "blocks")?;
+                core::write!(&mut value, "{:x}", self.file.inode.blocks(self.file.fs.sb.block_size()))?;
+            }
+            1 => get!(nlinks),
+            2 => get!(mode),
+            3 => get!(flags),
+            4 => get!(uid),
+            5 => get!(gid),
+            6 => get!(version),
+            7 => get!(atime),
+            8 => get!(crtime),
+            9 => get!(ctime),
+            10 => get!(xattr),
+            11 => get!(generation),
             _ => return Ok(None),
         }
 

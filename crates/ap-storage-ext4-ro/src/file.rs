@@ -63,7 +63,7 @@ impl<'a> File for Ext4File<'a> {
 
     type DirType<'c> = Dir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
-        if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.leaf_optimization) {
+        if self.inode.ftype() == FileType::Directory && (self.inode.version() != 1 || !self.leaf_optimization) {
             return Some(Dir::new(self));
         }
         None
@@ -82,7 +82,7 @@ impl<'a> File for Ext4File<'a> {
 
     fn meta(&self) -> MetaData {
         MetaData {
-            size: self.inode.size(),
+            size: self.inode.size(self.fs.sb.feature_incompat),
             filetype: self.inode.ftype(),
             id: self.nr,
             mtime: self.inode.mtime(),
@@ -93,7 +93,7 @@ impl<'a> File for Ext4File<'a> {
 impl<'a> Read for Ext4File<'a> {
     /// Read in the given inode.
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
-        let size = self.inode.size();
+        let size = self.inode.size(self.fs.sb.feature_incompat);
 
         // check for eof
         if offset >= size {
