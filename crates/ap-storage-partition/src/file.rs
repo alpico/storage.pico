@@ -2,6 +2,7 @@
 
 use crate::{dir::PartitionDir, Partition};
 use ap_storage::{
+    attr::EmptyAttributes,
     file::File,
     meta::{FileType, MetaData},
     Error, Offset, Read, ReadExt,
@@ -37,6 +38,11 @@ impl Read for PartitionFile<'_> {
 }
 
 impl File for PartitionFile<'_> {
+    type AttrType<'c> = EmptyAttributes where Self: 'c;
+    fn attr(&self) -> Self::AttrType<'_> {
+        EmptyAttributes
+    }
+
     type DirType<'a> = PartitionDir<'a> where Self: 'a;
     fn dir(&self) -> Option<<Self as ap_storage::file::File>::DirType<'_>> {
         if self.is_dir() {

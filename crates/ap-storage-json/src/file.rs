@@ -1,4 +1,5 @@
 use super::*;
+use ap_storage::attr::EmptyAttributes;
 use ap_storage::meta::{FileType, MetaData};
 
 pub struct JsonFile<'a> {
@@ -18,6 +19,11 @@ impl<'a> File for JsonFile<'a>
 where
     Self: 'a,
 {
+    type AttrType<'c> = EmptyAttributes where Self: 'c;
+    fn attr(&self) -> Self::AttrType<'_> {
+        EmptyAttributes
+    }
+
     type DirType<'c> = crate::dir::JsonDir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
         let children = self.value.as_object()?;

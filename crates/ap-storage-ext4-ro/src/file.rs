@@ -1,7 +1,7 @@
 //! File support.
 
 use super::{Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
-use ap_storage::{file::File, meta::MetaData};
+use ap_storage::{attr::EmptyAttributes, file::File, meta::MetaData};
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
@@ -56,7 +56,11 @@ impl<'a> Ext4File<'a> {
 }
 
 impl<'a> File for Ext4File<'a> {
-    /// Return a iterator if this is a directory.
+    type AttrType<'c> = EmptyAttributes where Self: 'c;
+    fn attr(&self) -> Self::AttrType<'_> {
+        EmptyAttributes
+    }
+
     type DirType<'c> = Dir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
         if self.inode.ftype() == FileType::Directory && (self.inode.version != 1 || !self.leaf_optimization) {

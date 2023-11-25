@@ -1,6 +1,6 @@
 //! File in VFAT
 
-use super::{dir::Dir, DirectoryEntry, VFatFS};
+use super::{attr::Attr, dir::Dir, DirectoryEntry, VFatFS};
 use ap_storage::{
     meta::{FileType, MetaData},
     Error, Offset, Read, ReadExt,
@@ -11,6 +11,7 @@ use core::cell::RefCell;
 pub struct File<'a> {
     pub(crate) fs: &'a VFatFS<'a>,
     pub(crate) inode: DirectoryEntry,
+    id: Offset,
     cache: RefCell<FileCache>,
 }
 
@@ -19,14 +20,16 @@ pub struct File<'a> {
 struct FileCache {
     block: u32,
     cluster: u32,
+    last_offset: u64,
 }
 
 impl<'a> File<'a> {
     /// Creating a file from a directory entry.
-    pub(crate) fn new(fs: &'a VFatFS<'a>, inode: DirectoryEntry) -> Self {
+    pub(crate) fn new(fs: &'a VFatFS<'a>, inode: DirectoryEntry, id: Offset) -> Self {
         Self {
             inode,
             fs,
+            id,
             cache: Default::default(),
         }
     }
@@ -44,7 +47,7 @@ impl<'a> File<'a> {
         let mut cluster = self.inode.cluster();
         let mut res = 0;
         while cluster < self.fs.fat_mask - 8 && res < 2 << 20 {
-            res += self.fs.block_size;
+            res += self.fs.cluster_size;
             cluster = self.fs.follow_fat(cluster).unwrap_or(!0u32);
         }
         res as Offset
@@ -53,6 +56,8 @@ impl<'a> File<'a> {
 
 impl<'a> ap_storage::file::File for File<'a> {
     type DirType<'c> = Dir<'c> where Self: 'c;
+    type AttrType<'c> = Attr<'c> where Self: 'c;
+
     fn dir(&self) -> Option<Self::DirType<'_>> {
         if self.inode.is_dir() {
             return Some(Dir::new(self));
@@ -60,7 +65,10 @@ impl<'a> ap_storage::file::File for File<'a> {
         None
     }
 
-    /// Open a file relative to the given directory.
+    fn attr(&self) -> Self::AttrType<'_> {
+        Attr::new(self)
+    }
+
     fn open(&self, mut offset: Offset) -> Result<Self, Error> {
         if !self.inode.is_dir() {
             return Err(anyhow::anyhow!("not a directory"));
@@ -73,7 +81,17 @@ impl<'a> ap_storage::file::File for File<'a> {
         }
 
         let entry: DirectoryEntry = (self as &dyn Read).read_object(32 * offset)?;
-        Ok(Self::new(self.fs, entry))
+        let id = if entry.is_dir() {
+            // for directories it is the start of the contents - this ensures hard-links have the same id
+            entry.cluster() as u64 * self.fs.cluster_size as u64
+        } else {
+            // For disks it is the offset of the directory entry - this ensures empty files still get a unique id
+            //
+            // The `| 1` is not strictly necessary, as all directories should start with a self-pointer so there should never be overlapping of values
+            self.cache.borrow().last_offset | 1
+        };
+
+        Ok(Self::new(self.fs, entry, id))
     }
 
     fn meta(&self) -> MetaData {
@@ -87,7 +105,7 @@ impl<'a> ap_storage::file::File for File<'a> {
         MetaData {
             size: self.size(),
             filetype,
-            id: self.inode.cluster() as Offset,
+            id: self.id,
             mtime: self.inode.mtime(),
         }
     }
@@ -101,8 +119,8 @@ impl Read for File<'_> {
         }
 
         let max_n = core::cmp::min(buf.len(), size as usize - offset as usize);
-        let block = (offset / self.fs.block_size as Offset) as u32;
-        let offset_in_block = offset % self.fs.block_size as Offset;
+        let block = (offset / self.fs.cluster_size as Offset) as u32;
+        let offset_in_block = offset % self.fs.cluster_size as Offset;
 
         let mut cache = self.cache.borrow_mut();
 
@@ -131,11 +149,15 @@ impl Read for File<'_> {
                     }
                     cache.block += 1;
                 }
-                (cache.cluster as u64 - 2) * self.fs.block_size as u64 + self.fs.data_start
+                (cache.cluster as u64 - 2) * self.fs.cluster_size as u64 + self.fs.data_start
             }
         };
+
+        // keep the last offset read in the cache to get the file-id
+        cache.last_offset = ofs + offset_in_block;
+
         // limit the bytes to the current block
-        let max_n = core::cmp::min(max_n, self.fs.block_size as usize - offset_in_block as usize);
+        let max_n = core::cmp::min(max_n, self.fs.cluster_size as usize - offset_in_block as usize);
         self.fs.disk.read_bytes(ofs + offset_in_block, &mut buf[..max_n])
     }
 }

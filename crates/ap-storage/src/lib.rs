@@ -8,12 +8,14 @@ pub type Offset = u64;
 /// Error when reading.
 pub type Error = anyhow::Error;
 
-mod read;
-pub use read::*;
+pub mod attr;
 pub mod directory;
 pub mod file;
 pub mod meta;
+mod read;
 mod write;
+
+pub use read::*;
 pub use write::*;
 
 /// Hierarchical filesystem.

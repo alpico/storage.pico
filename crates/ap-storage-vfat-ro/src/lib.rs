@@ -11,6 +11,8 @@
 
 use ap_storage::{Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_vfat::*;
+
+mod attr;
 mod dir;
 mod file;
 
@@ -29,7 +31,7 @@ pub struct Options {
 pub struct VFatFS<'a> {
     disk: &'a dyn Read,
     /// bytes per cluster.
-    block_size: u32,
+    cluster_size: u32,
     /// The number of clusters in the data-area.
     clusters: u32,
     /// The filesystem variant.
@@ -57,7 +59,7 @@ impl core::fmt::Debug for VFatFS<'_> {
         write!(
             fmt,
             "VFatFS{}( uuid {:x?}, bs {})",
-            self.variant as usize, self.uuid, self.block_size
+            self.variant as usize, self.uuid, self.cluster_size
         )
     }
 }
@@ -124,7 +126,7 @@ impl<'a> VFatFS<'a> {
 
         Ok(Self {
             disk,
-            block_size: sector_size * sectors_per_cluster,
+            cluster_size: sector_size * sectors_per_cluster,
             clusters,
             data_start,
             variant,
@@ -168,6 +170,6 @@ impl<'a> FileSystem<'a> for VFatFS<'a> {
             ..Default::default()
         };
 
-        Ok(file::File::new(self, root_dir))
+        Ok(file::File::new(self, root_dir, self.root_start))
     }
 }

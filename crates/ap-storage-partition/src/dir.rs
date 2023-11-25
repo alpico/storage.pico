@@ -7,7 +7,7 @@ use ap_storage::{
     meta::FileType,
     Error, ReadExt,
 };
-use core::fmt::Write;
+use ap_util_slice_writer::*;
 
 pub enum Alias {
     Raw,
@@ -72,19 +72,5 @@ impl DirIterator for PartitionDir<'_> {
             offset: self.pos as u64 - 1,
             typ,
         }))
-    }
-}
-
-/// Write into a slice of bytes while truncating on overflow.
-struct SliceWriter<'a>(pub &'a mut [u8], pub usize);
-impl Write for SliceWriter<'_> {
-    fn write_str(&mut self, value: &str) -> Result<(), core::fmt::Error> {
-        let b = value.as_bytes();
-        if self.1 < self.0.len() {
-            let n = core::cmp::min(self.0.len() - self.1, b.len());
-            self.0[self.1..self.1 + n].copy_from_slice(&b[..n]);
-        }
-        self.1 += b.len();
-        Ok(())
     }
 }

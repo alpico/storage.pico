@@ -7,7 +7,7 @@
 #![feature(byte_slice_trim_ascii)]
 
 mod long_entry;
-use ap_date::{dos_date2ts, dos_time2ts, Time};
+use ap_util_date::{dos_date2ts, dos_time2ts, Time};
 pub use long_entry::LongEntry;
 
 /// The different FAT variants.
@@ -109,8 +109,12 @@ impl DirectoryEntry {
     pub fn btime(&self) -> Time {
         (dos_date2ts(self.bdate) + dos_time2ts(self.btime)) * 1_000_000_000 + self.btenthms as Time * 10_000_000
     }
-}
 
+    /// Return the atime in nanoseconds since 1970.
+    pub fn atime(&self) -> Time {
+        dos_date2ts(self.mdate) * 1_000_000_000
+    }
+}
 impl core::fmt::Debug for DirectoryEntry {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(

@@ -1,10 +1,13 @@
 //! Support for files.
 
-use crate::{directory::DirIterator, meta::FileType, meta::MetaData, Error, Offset};
+use crate::{attr::Attributes, directory::DirIterator, meta::FileType, meta::MetaData, Error, Offset};
 
 /// A file trait.
 pub trait File: crate::Read {
     type DirType<'c>: DirIterator
+    where
+        Self: 'c;
+    type AttrType<'c>: Attributes
     where
         Self: 'c;
     /// Return a directory iterator.
@@ -17,6 +20,8 @@ pub trait File: crate::Read {
 
     /// Get the metadata for this file.
     fn meta(&self) -> MetaData;
+
+    fn attr(&self) -> Self::AttrType<'_>;
 
     /// Lookup a single name and open the corresponding file.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error>

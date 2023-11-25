@@ -3,7 +3,7 @@
 #![no_std]
 
 use ap_storage::directory::{DirEntry, DirIterator};
-use ap_storage::{file::File, meta::MetaData, FileSystem, Read};
+use ap_storage::{attr, file::File, meta::MetaData, Error, FileSystem, Read};
 use ap_storage_ext4_ro::Ext4Fs;
 use ap_storage_json::JsonFS;
 use ap_storage_partition::PartitionFS;
@@ -38,7 +38,7 @@ impl<'a> UnifiedFs<'a> {
 
 impl<'a> FileSystem<'a> for UnifiedFs<'a> {
     type FileType = UnifiedFile<'a>;
-    fn root(&'a self) -> Result<<Self as FileSystem<'a>>::FileType, anyhow::Error> {
+    fn root(&'a self) -> Result<<Self as FileSystem<'a>>::FileType, Error> {
         Ok(match self {
             UnifiedFs::Ext4(f) => UnifiedFile::Ext4(f.root()?),
             UnifiedFs::Json(f) => UnifiedFile::Json(f.root()?),
@@ -56,6 +56,15 @@ pub enum UnifiedFile<'a> {
 }
 
 impl<'a> File for UnifiedFile<'a> {
+    type AttrType<'c> = UnifiedAttr<'c> where Self: 'c;
+    fn attr(&self) -> Self::AttrType<'_> {
+        match self {
+            UnifiedFile::Ext4(f) => UnifiedAttr::Ext4(f.attr()),
+            UnifiedFile::Json(f) => UnifiedAttr::Json(f.attr()),
+            UnifiedFile::Vfat(f) => UnifiedAttr::Vfat(f.attr()),
+            UnifiedFile::Partition(f) => UnifiedAttr::Partition(f.attr()),
+        }
+    }
     type DirType<'c> = UnifiedDir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
         Some(match self {
@@ -65,7 +74,7 @@ impl<'a> File for UnifiedFile<'a> {
             UnifiedFile::Partition(f) => UnifiedDir::Partition(f.dir()?),
         })
     }
-    fn open(&self, offset: u64) -> Result<Self, anyhow::Error> {
+    fn open(&self, offset: u64) -> Result<Self, Error> {
         Ok(match self {
             UnifiedFile::Ext4(f) => UnifiedFile::Ext4(f.open(offset)?),
             UnifiedFile::Json(f) => UnifiedFile::Json(f.open(offset)?),
@@ -84,7 +93,7 @@ impl<'a> File for UnifiedFile<'a> {
 }
 
 impl<'a> Read for UnifiedFile<'a> {
-    fn read_bytes(&self, ofs: u64, buf: &mut [u8]) -> Result<usize, anyhow::Error> {
+    fn read_bytes(&self, ofs: u64, buf: &mut [u8]) -> Result<usize, Error> {
         match self {
             UnifiedFile::Ext4(f) => f.read_bytes(ofs, buf),
             UnifiedFile::Json(f) => f.read_bytes(ofs, buf),
@@ -102,12 +111,30 @@ pub enum UnifiedDir<'a> {
 }
 
 impl<'a> DirIterator for UnifiedDir<'a> {
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, anyhow::Error> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, Error> {
         match self {
             UnifiedDir::Ext4(f) => f.next(name),
             UnifiedDir::Json(f) => f.next(name),
             UnifiedDir::Vfat(f) => f.next(name),
             UnifiedDir::Partition(f) => f.next(name),
+        }
+    }
+}
+
+pub enum UnifiedAttr<'a> {
+    Ext4(<<Ext4Fs<'a> as FileSystem<'a>>::FileType as File>::AttrType<'a>),
+    Vfat(<<VFatFS<'a> as FileSystem<'a>>::FileType as File>::AttrType<'a>),
+    Json(<<JsonFS as FileSystem<'a>>::FileType as File>::AttrType<'a>),
+    Partition(<<PartitionFS<'a> as FileSystem<'a>>::FileType as File>::AttrType<'a>),
+}
+
+impl attr::Attributes for UnifiedAttr<'_> {
+    fn next(&mut self, name: &mut [u8], value: &mut [u8]) -> Result<Option<attr::Entry>, Error> {
+        match self {
+            UnifiedAttr::Ext4(f) => f.next(name, value),
+            UnifiedAttr::Json(f) => f.next(name, value),
+            UnifiedAttr::Vfat(f) => f.next(name, value),
+            UnifiedAttr::Partition(f) => f.next(name, value),
         }
     }
 }

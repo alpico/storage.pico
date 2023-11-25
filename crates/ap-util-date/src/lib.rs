@@ -20,7 +20,7 @@ pub fn time2ts(hour: u32, minute: u32, second: u32) -> Time {
 /// month in range 1..=12
 pub fn date2ts(mday: u32, month: u32, year: u32) -> Time {
     let days_per_month = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let mut day_in_year = days_per_month[month as usize - 1] + mday as i32 - 1;
+    let mut day_in_year = days_per_month[core::cmp::max(month as usize, 1) - 1] + mday as i32 - 1;
     if is_leap(year) && month < 3 {
         day_in_year -= 1
     };
