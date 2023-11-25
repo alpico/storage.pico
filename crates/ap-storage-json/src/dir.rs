@@ -6,8 +6,8 @@ pub struct JsonDir<'a> {
     pub offset: usize,
 }
 
-impl directory::Iterator for JsonDir<'_> {
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
+impl directory::DirIterator for JsonDir<'_> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::DirEntry>, Error> {
         let Some(child) = self.keys.next() else {
             return Ok(None);
         };
@@ -19,7 +19,7 @@ impl directory::Iterator for JsonDir<'_> {
         } else {
             FileType::File
         };
-        Ok(Some(directory::Item {
+        Ok(Some(directory::DirEntry {
             offset: self.offset as u64 - 1,
             nlen: child.len(),
             typ,

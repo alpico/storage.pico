@@ -2,6 +2,7 @@
 
 #![no_std]
 
+use ap_storage::directory::{DirEntry, DirIterator};
 use ap_storage::{file::File, meta::MetaData, FileSystem, Read};
 use ap_storage_ext4_ro::Ext4Fs;
 use ap_storage_json::JsonFS;
@@ -100,9 +101,8 @@ pub enum UnifiedDir<'a> {
     Partition(<<PartitionFS<'a> as FileSystem<'a>>::FileType as File>::DirType<'a>),
 }
 
-use ap_storage::directory::{Item, Iterator};
-impl<'a> Iterator for UnifiedDir<'a> {
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<Item>, anyhow::Error> {
+impl<'a> DirIterator for UnifiedDir<'a> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, anyhow::Error> {
         match self {
             UnifiedDir::Ext4(f) => f.next(name),
             UnifiedDir::Json(f) => f.next(name),

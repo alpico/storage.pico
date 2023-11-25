@@ -1,4 +1,4 @@
-use ap_storage::{directory::Iterator, file::File, meta::FileType, Error, FileSystem};
+use ap_storage::{directory::DirIterator, file::File, meta::FileType, Error, FileSystem};
 use ap_storage_linux::LinuxDisk;
 use gumdrop::Options;
 

@@ -1,10 +1,10 @@
 //! Support for files.
 
-use crate::{directory::Iterator, meta::FileType, meta::MetaData, Error, Offset};
+use crate::{directory::DirIterator, meta::FileType, meta::MetaData, Error, Offset};
 
 /// A file trait.
 pub trait File: crate::Read {
-    type DirType<'c>: Iterator
+    type DirType<'c>: DirIterator
     where
         Self: 'c;
     /// Return a directory iterator.

@@ -1,7 +1,11 @@
 //! Directory iteration for vfat.
 
 use super::{file::File, DirectoryEntry, Error, Offset};
-use ap_storage::{directory, meta::FileType, Read, ReadExt};
+use ap_storage::{
+    directory::{DirEntry, DirIterator},
+    meta::FileType,
+    Read, ReadExt,
+};
 
 pub struct Dir<'a> {
     file: &'a File<'a>,
@@ -93,8 +97,8 @@ impl<'a> Dir<'a> {
     }
 }
 
-impl<'a> directory::Iterator for Dir<'a> {
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
+impl<'a> DirIterator for Dir<'a> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, Error> {
         #[cfg(not(feature = "long-name"))]
         let entry = self.get_next()?;
         #[cfg(feature = "long-name")]
@@ -140,7 +144,7 @@ impl<'a> directory::Iterator for Dir<'a> {
             name[..n].copy_from_slice(&shortname[..n]);
         }
 
-        Ok(Some(directory::Item {
+        Ok(Some(DirEntry {
             offset: self.offset - 1,
             nlen,
             typ,

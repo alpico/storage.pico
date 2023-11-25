@@ -1,6 +1,6 @@
 //! Directory iterator.
 use super::{Error, FileType, Read, ReadExt};
-use ap_storage::directory::{self, Iterator};
+use ap_storage::directory::{DirEntry, DirIterator};
 use ap_storage_ext4::dir::DirEntryHeader;
 
 /// A directory iterator.
@@ -15,8 +15,8 @@ impl<'a> Dir<'a> {
     }
 }
 
-impl<'a> Iterator for Dir<'a> {
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<directory::Item>, Error> {
+impl<'a> DirIterator for Dir<'a> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, Error> {
         const O: usize = core::mem::size_of::<DirEntryHeader>();
 
         let header: DirEntryHeader = match self.parent.read_object(self.offset) {
@@ -40,7 +40,7 @@ impl<'a> Iterator for Dir<'a> {
             typ = FileType::Parent;
         }
 
-        Ok(Some(directory::Item {
+        Ok(Some(DirEntry {
             offset,
             nlen,
             typ,

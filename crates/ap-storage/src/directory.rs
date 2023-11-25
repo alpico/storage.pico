@@ -5,7 +5,7 @@ use crate::meta::FileType;
 
 /// Directory entry.
 #[derive(Debug)]
-pub struct Item {
+pub struct DirEntry {
     /// The offset inside the parent. This is used to open the file relative to the parent.
     pub offset: u64,
     /// An unique ID of the referenced file.  Usefull for detecting hard-links.
@@ -17,10 +17,10 @@ pub struct Item {
 }
 
 /// Iterator over directories.
-pub trait Iterator {
+pub trait DirIterator {
     /// Return the next entry in this directory.
     ///
     /// Fills the name with upto `nlen` bytes.  If a shorter buffer
     /// is given the name is truncated.
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<Item>, Error>;
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, Error>;
 }

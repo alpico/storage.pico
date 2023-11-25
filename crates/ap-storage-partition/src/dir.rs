@@ -2,7 +2,7 @@
 
 use crate::{file::PartitionFile, Partition};
 use ap_storage::{
-    directory::{Item, Iterator},
+    directory::{DirEntry, DirIterator},
     file::File,
     meta::FileType,
     Error, ReadExt,
@@ -27,8 +27,8 @@ impl<'a> PartitionDir<'a> {
     }
 }
 
-impl Iterator for PartitionDir<'_> {
-    fn next(&mut self, name: &mut [u8]) -> Result<Option<Item>, Error> {
+impl DirIterator for PartitionDir<'_> {
+    fn next(&mut self, name: &mut [u8]) -> Result<Option<DirEntry>, Error> {
         if self.pos >= 4 * Alias::Max as usize {
             return Ok(None);
         }
@@ -66,7 +66,7 @@ impl Iterator for PartitionDir<'_> {
             FileType::Unknown
         };
         self.pos += 1;
-        Ok(Some(Item {
+        Ok(Some(DirEntry {
             nlen: writer.1,
             id: part as u64,
             offset: self.pos as u64 - 1,
