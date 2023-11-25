@@ -6,4 +6,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dev-dependencies]
+ap-storage-vfat={ path = "../ap-storage-vfat"}
 ap-storage-vfat-mkfs={ path = "../ap-storage-vfat-mkfs"}

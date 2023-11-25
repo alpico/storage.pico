@@ -63,7 +63,7 @@ struct CommandOptions {
     #[options(meta = "N")]
     volume_id: UnsetField<u32>,
     /// Profile to start with. One of {default,tiny,small,compat,large,huge}.
-    #[options(parse(try_from_str="to_profile"))]
+    #[options(parse(try_from_str = "to_profile"))]
     profile: Profile,
 }
 
@@ -151,10 +151,20 @@ fn main() -> Result<(), Error> {
 
     let disk = LinuxDiskRW::new("/dev/stdin", opts.offset)?;
     let r = &disk as &dyn Read;
-    let sectors = r.detect_size() / builder.get_sector_size() as u64;
+
+    // silently limit the usable sectors to 32-bit -> this means 128 TiB
+    let sectors: u32 = core::cmp::min(0xffff_fffc, r.detect_size() / builder.get_sector_size() as u64) as u32;
+    let (variant, fat_size) = builder.calc_variant(sectors as u64)?;
+    if opts.verbose {
+        let data_start = builder.data_start(variant, fat_size);
+        let clusters = (sectors as u64 - data_start) / builder.get_per_cluster() as u64;
+        println!(
+            "clusters {clusters:#x} starting at sector {data_start:#x} with fat entries {:#x}",
+            fat_size * builder.get_sector_size() as u64 * 8 / variant as u64
+        );
+    }
     if opts.dry_run {
-        builder.calc_variant(sectors)?;
-        return Ok(())
+        return Ok(());
     }
     builder.build(&disk, sectors)
 }

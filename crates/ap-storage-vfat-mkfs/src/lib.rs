@@ -103,6 +103,10 @@ impl MakeVFatFS {
     pub fn get_sector_size(&self) -> u16 {
         self.sector_size
     }
+    /// Return the per_cluster variable.
+    pub fn get_per_cluster(&self) -> u8 {
+        self.per_cluster
+    }
 
     /// Profile for the smallest size with 128 byte sectors.
     pub fn tiny() -> Self {
@@ -110,8 +114,10 @@ impl MakeVFatFS {
             .align(false)
             .num_fats(1)
             .root_entries(1)
-            .per_cluster(1).unwrap()
-            .sector_size(128).unwrap()
+            .per_cluster(1)
+            .unwrap()
+            .sector_size(128)
+            .unwrap()
     }
 
     /// Profile for a small size with 512 byte sectors.
@@ -120,31 +126,29 @@ impl MakeVFatFS {
             .align(false)
             .num_fats(1)
             .root_entries(16)
-            .per_cluster(1).unwrap()
+            .per_cluster(1)
+            .unwrap()
     }
 
-    /// Profile for been most compatible (2TB).
+    /// Profile to be most compatible by using  (512GB).
     pub fn compat() -> Self {
         Self::default()
             .reserved(8)
             .num_fats(2)
-            .per_cluster(4).unwrap()
-            .sector_size(512).unwrap()
+            .per_cluster(16)
+            .unwrap()
+            .sector_size(512)
+            .unwrap()
     }
     /// Profile for a large disk with 4k sectors and 64k clusters (16 TB).
     pub fn large() -> Self {
-        Self::default()
-            .per_cluster(16).unwrap()
-            .sector_size(4096).unwrap()
+        Self::default().per_cluster(16).unwrap().sector_size(4096).unwrap()
     }
 
     /// Profile for a huge disk with 32k sectors and 4M clusters (128 TB).
     pub fn huge() -> Self {
-        Self::default()
-            .per_cluster(128).unwrap()
-            .sector_size(32768).unwrap()
+        Self::default().per_cluster(128).unwrap().sector_size(32768).unwrap()
     }
-
 }
 
 impl MakeVFatFS {
@@ -166,31 +170,31 @@ impl MakeVFatFS {
         let per_cluster = self.per_cluster as u64;
         let num_fats = core::cmp::max(self.num_fats, 1) as u64;
 
-        // for the FAT12 and FAT16 variants the root-sectors have to be accounted for
+        // for the FAT12 and FAT16 variants the root-sectors and the two reserved entries have to be accounted for
         let available_sectors = sectors - core::cmp::min(sectors, reserved_sectors + root_sectors);
         if available_sectors < per_cluster + num_fats {
             return Err(anyhow::anyhow!("not enough space"));
         }
 
-
-        // number of fat-entries needed
-        let fat_size12 = (available_sectors / per_cluster).div_ceil(sector_size  * 2 / 3 + num_fats);
+        // start with FAT12
+        let fat_size12 = (available_sectors / per_cluster).div_ceil(sector_size * 2 / 3 + num_fats);
         let cluster12 = (available_sectors - fat_size12 * num_fats) / per_cluster;
         if cluster12 < 4085 {
             return Ok((Variant::Fat12, fat_size12));
         }
 
-        // try fat16 now
+        // try FAT16 instead
         let fat_size16 = available_sectors.div_ceil((sector_size / 2 * per_cluster) + num_fats);
         let cluster16 = (available_sectors - fat_size16 * num_fats) / per_cluster;
         if cluster16 < 65525 {
             return Ok((Variant::Fat16, fat_size16));
         }
 
-        // finally fat32
-        let fat_size32 = sectors.div_ceil((sector_size / 4 * per_cluster) + num_fats);
+        // finally FAT32 - this has 28-bits for the cluster number
+        let entries_per_cluster = sector_size * per_cluster / 4;
+        let fat_size32 = (sectors - reserved_sectors + per_cluster * num_fats).div_ceil(entries_per_cluster + num_fats);
         let cluster32 = (sectors - fat_size32 * num_fats) / per_cluster;
-        if cluster32 < 0xffffff6 {
+        if cluster32 < 0xfff_fff6 {
             return Ok((Variant::Fat32, fat_size32));
         }
         Err(anyhow::anyhow!("disk to large"))
@@ -206,10 +210,10 @@ impl MakeVFatFS {
     }
 
     /// Initialize the filesystem.
-    pub fn build(&self, disk: &dyn Write, sectors: u64) -> Result<(), Error> {
+    pub fn build(&self, disk: &dyn Write, sectors: u32) -> Result<(), Error> {
         let sector_size = self.sector_size as u64;
+        let sectors = sectors as u64;
         let (variant, fat_size) = self.calc_variant(sectors)?;
-
 
         let reserved_sectors = core::cmp::max(self.reserved, 1);
         let num_fats = core::cmp::max(self.num_fats, 1);
@@ -227,7 +231,7 @@ impl MakeVFatFS {
         if sectors < 0x10000 {
             bpb.total_sectors16 = sectors as u16;
         } else {
-            bpb.total_sectors32 = sectors.try_into().map_err(|_| anyhow::anyhow!("to huge"))?
+            bpb.total_sectors32 = sectors as u32;
         }
         if variant != Variant::Fat32 {
             bpb.root_entries = root_entries;
