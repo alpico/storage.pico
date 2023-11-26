@@ -1,7 +1,7 @@
 //! File implementation for partitions.
 
 use crate::{attr::Attr, dir::PartitionDir, Partition};
-use ap_storage::{file::File, Error, Offset, Read, ReadExt};
+use ap_storage::{file::File, file::FileType, Error, Offset, Read, ReadExt};
 
 pub struct PartitionFile<'a> {
     pub(crate) disk: &'a dyn Read,
@@ -21,6 +21,18 @@ impl<'a> PartitionFile<'a> {
         let buf: [u8; 2] = self.disk.read_object(self.offset + 0x1fe).unwrap_or([0, 0]);
         buf[0] == 0x55 && buf[1] == 0xaa
     }
+
+    /// Return the filetype.
+    pub fn ftype(&self) -> FileType {
+        if self.typ == 0 || self.len == 0 {
+            FileType::Unknown
+        } else if self.is_dir() {
+            FileType::Directory
+        } else {
+            FileType::File
+        }
+    }
+
 }
 
 impl Read for PartitionFile<'_> {
@@ -48,7 +60,7 @@ impl File for PartitionFile<'_> {
     }
 
     fn open(&self, offset: u64) -> Result<Self, anyhow::Error> {
-        let part = offset / crate::dir::Alias::Max as u64;
+        let part = offset;
         if part > 4 {
             return Err(anyhow::anyhow!("invalid number"));
         }
