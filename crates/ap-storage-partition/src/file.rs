@@ -84,7 +84,6 @@ impl File for PartitionFile<'_> {
             size: self.len,
             id: self.offset,
             filetype,
-            mtime: 0,
         }
     }
 }

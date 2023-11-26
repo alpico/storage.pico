@@ -43,6 +43,11 @@ impl DirectoryEntry {
         self.attr & 0x10 != 0
     }
 
+    /// Get the attributes field.
+    pub fn attr(&self) -> u8 {
+        self.attr
+    }
+
     /// Return the cluster number.
     pub fn cluster(&self) -> u32 {
         // Volume ID?

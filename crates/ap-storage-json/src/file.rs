@@ -46,7 +46,6 @@ where
         MetaData {
             size: serde_json::to_string(self.value).map(|x| x.len()).unwrap_or_default() as Offset,
             id: self.id,
-            mtime: 0,
             filetype: if self.value.is_object() {
                 FileType::Directory
             } else {

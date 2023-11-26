@@ -11,7 +11,7 @@ use core::cell::RefCell;
 pub struct File<'a> {
     pub(crate) fs: &'a VFatFS<'a>,
     pub(crate) inode: DirectoryEntry,
-    id: Offset,
+    pub(crate) id: Offset,
     cache: RefCell<FileCache>,
 }
 
@@ -38,7 +38,8 @@ impl<'a> File<'a> {
         self.inode.cluster() == 0
     }
 
-    fn size(&self) -> Offset {
+    /// Getting the real size of the file by following the FAT on directories.
+    pub fn size(&self) -> Offset {
         let res = self.inode.size();
         if !self.inode.is_dir() || res < 2 << 20 {
             return res;
@@ -106,7 +107,6 @@ impl<'a> ap_storage::file::File for File<'a> {
             size: self.size(),
             filetype,
             id: self.id,
-            mtime: self.inode.mtime(),
         }
     }
 }

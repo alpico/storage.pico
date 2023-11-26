@@ -20,8 +20,7 @@ pub enum FileType {
 
 /// The minimal subset of metadata for all files.
 pub struct MetaData {
-    pub size: Offset,
     pub id: Offset,
+    pub size: Offset,
     pub filetype: FileType,
-    pub mtime: Time,
 }

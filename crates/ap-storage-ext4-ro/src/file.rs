@@ -9,7 +9,7 @@ pub struct Ext4File<'a> {
     pub(crate) fs: &'a Ext4Fs<'a>,
     pub(crate) inode: Inode,
     leaf_optimization: bool,
-    nr: u64,
+    pub(crate) nr: u64,
     cache: RefCell<FileCache>,
 }
 
@@ -85,7 +85,6 @@ impl<'a> File for Ext4File<'a> {
             size: self.inode.size(self.fs.sb.feature_incompat),
             filetype: self.inode.ftype(),
             id: self.nr,
-            mtime: self.inode.mtime(),
         }
     }
 }

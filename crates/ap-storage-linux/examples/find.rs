@@ -47,7 +47,6 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String, depth: usize) -> R
                 let meta = f.meta();
                 println!("\tid\t{:x}", meta.id);
                 println!("\tsize\t{}", meta.size);
-                println!("\tmtime\t{:x}", meta.mtime);
                 println!("\ttype\t{:?}", entry.typ);
             }
             if opts.attr {
