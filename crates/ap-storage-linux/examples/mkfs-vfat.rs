@@ -63,31 +63,8 @@ struct CommandOptions {
     #[options(meta = "N")]
     volume_id: UnsetField<u32>,
     /// Profile to start with. One of {default,tiny,small,compat,large,huge}.
-    #[options(parse(try_from_str = "to_profile"))]
-    profile: Profile,
-}
-
-#[derive(Debug, Default)]
-enum Profile {
-    #[default]
-    Default,
-    Tiny,
-    Small,
-    Compat,
-    Large,
-    Huge,
-}
-
-fn to_profile(s: &str) -> Result<Profile, &str> {
-    match s {
-        "default" => Ok(Profile::Default),
-        "tiny" => Ok(Profile::Tiny),
-        "small" => Ok(Profile::Small),
-        "compat" => Ok(Profile::Compat),
-        "large" => Ok(Profile::Large),
-        "huge" => Ok(Profile::Huge),
-        _ => Err(s),
-    }
+    #[options(default = "default")]
+    profile: String,
 }
 
 #[derive(PartialEq, Default, Debug)]
@@ -119,14 +96,16 @@ fn rand_volume_id() -> u32 {
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
 
-    let mut builder = match opts.profile {
-        Profile::Default => MakeVFatFS::default(),
-        Profile::Tiny => MakeVFatFS::tiny(),
-        Profile::Small => MakeVFatFS::small(),
-        Profile::Compat => MakeVFatFS::compat(),
-        Profile::Large => MakeVFatFS::large(),
-        Profile::Huge => MakeVFatFS::huge(),
+    let mut builder = match opts.profile.as_str() {
+        "default" => MakeVFatFS::default(),
+        "tiny" => MakeVFatFS::tiny(),
+        "small" => MakeVFatFS::small(),
+        "compat" => MakeVFatFS::compat(),
+        "large" => MakeVFatFS::large(),
+        "huge" => MakeVFatFS::huge(),
+        _ => Err(Error::msg("no such profile"))?,
     };
+
     builder.volume_id(rand_volume_id());
     // let the options override the parameters
     opts.align.map(|v| builder.align(v));
