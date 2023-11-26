@@ -1,27 +1,30 @@
 //! Support for extended attributes.
 
-use super::Error;
-
-pub struct Entry {
-    /// Length of the name in bytes.
-    pub name_len: usize,
-    /// Length of the value in bytes.
-    pub value_len: usize,
+/// The type of the attribute gives a hint how they can be fetched.
+pub enum AttrType {
+    Raw,
+    U64,
+    I64,
 }
 
-/// Trait for iterating over extended attributes aka (key,value) pairs.
-pub trait Attributes {
-    /// Return the next attribute.
+/// Trait for file attributes aka (key,value) pairs.
+///
+/// All keys can be iterated.
+pub trait Attributes<'a>: IntoIterator<Item = &'a (AttrType, &'a str)> {
+    /// Get a binary encoded attribute.
     ///
-    /// - Data is copied out to the buffers and truncated if they are to small.
-    /// - An `Ok(None)` means end of iterator.
-    fn next(&mut self, name: &mut [u8], value: &mut [u8]) -> Result<Option<Entry>, Error>;
-}
+    /// Returns the length of the value to be written if value is large enough.
+    fn get_raw(&mut self, _name: &str, _value: &mut [u8]) -> Option<usize> {
+        None
+    }
 
-/// Helper for filesystems without attributes.
-pub struct EmptyAttributes;
-impl Attributes for EmptyAttributes {
-    fn next(&mut self, _name: &mut [u8], _value: &mut [u8]) -> Result<Option<Entry>, Error> {
-        Ok(None)
+    /// Get a u64 attribute.
+    fn get_u64(&mut self, _name: &str) -> Option<u64> {
+        None
+    }
+
+    /// Get a i64 attribute.
+    fn get_i64(&mut self, _name: &str) -> Option<i64> {
+        None
     }
 }

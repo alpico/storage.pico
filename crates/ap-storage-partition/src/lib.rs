@@ -2,6 +2,7 @@
 #![no_std]
 
 use ap_storage::{Error, FileSystem, Read, ReadExt};
+mod attr;
 mod dir;
 mod file;
 
@@ -43,6 +44,13 @@ impl<'a> PartitionFS<'a> {
 impl<'a> FileSystem<'a> for PartitionFS<'a> {
     type FileType = file::PartitionFile<'a>;
     fn root(&'a self) -> Result<<Self as FileSystem<'a>>::FileType, anyhow::Error> {
-        Ok(file::PartitionFile::new(self.disk, 0, self.len))
+        Ok(file::PartitionFile {
+            disk: self.disk,
+            offset: 0,
+            len: self.len,
+            id: 0,
+            typ: 0,
+            drive: 0x80,
+        })
     }
 }

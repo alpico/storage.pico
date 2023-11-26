@@ -2,8 +2,9 @@
 //!
 //! - first example of a pseudo-filesystem
 //! - usefull for small in-memory data
-use ap_storage::{directory, file::File, meta::FileType, Error, FileSystem, Offset, Read};
+use ap_storage::{directory, file::File, file::FileType, Error, FileSystem, Offset, Read};
 
+mod attr;
 mod dir;
 mod file;
 

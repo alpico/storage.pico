@@ -1,15 +1,37 @@
 //! Support for files.
 
-use crate::{attr::Attributes, directory::DirIterator, meta::FileType, meta::MetaData, Error, Offset};
+use crate::{attr::Attributes, directory::DirIterator, Error, Offset};
+
+/// Generic file-types.
+#[derive(Debug, PartialEq, Eq)]
+pub enum FileType {
+    /// A plain file.
+    File,
+    /// A group of directories.
+    Directory,
+    /// The parent directory and the self-pointer.
+    Parent,
+    /// A symbolic link.
+    SymLink,
+    /// An unsupported entry.
+    Unknown,
+}
 
 /// A file trait.
 pub trait File: crate::Read {
+    /// Type to make `attr()` generic.
+    type AttrType<'c>: Attributes<'c>
+    where
+        Self: 'c;
+
+    /// Get the attributes for the file.
+    fn attr(&self) -> Self::AttrType<'_>;
+
+    /// Type to make `dir()` generic.
     type DirType<'c>: DirIterator
     where
         Self: 'c;
-    type AttrType<'c>: Attributes
-    where
-        Self: 'c;
+
     /// Return a directory iterator.
     fn dir(&self) -> Option<Self::DirType<'_>>;
 
@@ -17,11 +39,6 @@ pub trait File: crate::Read {
     fn open(&self, offset: Offset) -> Result<Self, Error>
     where
         Self: Sized;
-
-    /// Get the metadata for this file.
-    fn meta(&self) -> MetaData;
-
-    fn attr(&self) -> Self::AttrType<'_>;
 
     /// Lookup a single name and open the corresponding file.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error>

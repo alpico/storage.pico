@@ -1,10 +1,8 @@
 use super::*;
-use ap_storage::attr::EmptyAttributes;
-use ap_storage::meta::{FileType, MetaData};
 
 pub struct JsonFile<'a> {
     value: &'a serde_json::Value,
-    id: u64,
+    pub(crate) id: u64,
 }
 impl<'a> JsonFile<'a> {
     pub fn new(value: &'a serde_json::Value, name: &str) -> Self {
@@ -19,9 +17,9 @@ impl<'a> File for JsonFile<'a>
 where
     Self: 'a,
 {
-    type AttrType<'c> = EmptyAttributes where Self: 'c;
+    type AttrType<'c> = attr::Attr<'c> where Self: 'c;
     fn attr(&self) -> Self::AttrType<'_> {
-        EmptyAttributes
+        attr::Attr { file: self }
     }
 
     type DirType<'c> = crate::dir::JsonDir<'c> where Self: 'c;
@@ -41,17 +39,6 @@ where
         let children = self.value.as_object().ok_or(anyhow::anyhow!("not an object"))?;
         let child = children.keys().nth(offset as usize).ok_or(anyhow::anyhow!("eof"))?;
         Ok(JsonFile::new(&children[child], child))
-    }
-    fn meta(&self) -> MetaData {
-        MetaData {
-            size: serde_json::to_string(self.value).map(|x| x.len()).unwrap_or_default() as Offset,
-            id: self.id,
-            filetype: if self.value.is_object() {
-                FileType::Directory
-            } else {
-                FileType::File
-            },
-        }
     }
 
     /// A more efficient lookup.

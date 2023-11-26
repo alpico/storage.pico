@@ -1,4 +1,10 @@
-use ap_storage::{attr::Attributes, directory::DirIterator, file::File, meta::FileType, Error, FileSystem};
+use ap_storage::{
+    attr::{AttrType, Attributes},
+    directory::DirIterator,
+    file::File,
+    file::FileType,
+    Error, FileSystem,
+};
 use ap_storage_linux::LinuxDisk;
 use gumdrop::Options;
 
@@ -15,9 +21,6 @@ struct CommandOptions {
 
     /// The bytes to skip in the disk file.
     offset: u64,
-
-    /// List the file metadata.
-    meta: bool,
 
     /// List the file attributes.
     attr: bool,
@@ -41,24 +44,19 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String, depth: usize) -> R
         }
         let st = core::str::from_utf8(&name[..entry.nlen]).unwrap_or_default();
         println!("{path}/{st}");
-        if opts.meta || opts.attr {
+        if opts.attr {
             let f = f.open(entry.offset).unwrap();
-            if opts.meta {
-                let meta = f.meta();
-                println!("\tid\t{:x}", meta.id);
-                println!("\tsize\t{}", meta.size);
-                println!("\ttype\t{:?}", entry.typ);
-            }
-            if opts.attr {
-                let mut attr = f.attr();
-                let mut name = [0u8; 32];
-                let mut value = [0u8; 256];
-                while let Some(entry) = attr.next(&mut name, &mut value)? {
-                    let k =
-                        core::str::from_utf8(&name[..core::cmp::min(name.len(), entry.name_len)]).unwrap_or_default();
-                    let v = core::str::from_utf8(&value[..core::cmp::min(value.len(), entry.value_len)])
-                        .unwrap_or_default();
-                    println!("\t{k}\t{v}")
+            let mut attr = f.attr();
+            for (typ, name) in f.attr() {
+                match typ {
+                    AttrType::U64 => println!("\t{name}\t{:#x}", attr.get_u64(name).unwrap()),
+                    AttrType::I64 => println!("\t{name}\t{}", attr.get_i64(name).unwrap()),
+                    AttrType::Raw => {
+                        let mut value = [0u8; 256];
+                        let count = attr.get_raw(name, &mut value).unwrap();
+                        let v = core::str::from_utf8(&value[..core::cmp::min(value.len(), count)]).unwrap_or_default();
+                        println!("\t{name}\t{v}");
+                    }
                 }
             }
         }

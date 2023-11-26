@@ -3,8 +3,7 @@
 use crate::{file::PartitionFile, Partition};
 use ap_storage::{
     directory::{DirEntry, DirIterator},
-    file::File,
-    meta::FileType,
+    file::{File, FileType},
     Error, ReadExt,
 };
 use ap_util_slice_writer::*;

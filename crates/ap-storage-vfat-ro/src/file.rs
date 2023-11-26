@@ -1,10 +1,7 @@
 //! File in VFAT
 
 use super::{attr::Attr, dir::Dir, DirectoryEntry, VFatFS};
-use ap_storage::{
-    meta::{FileType, MetaData},
-    Error, Offset, Read, ReadExt,
-};
+use ap_storage::{file::FileType, Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -53,21 +50,34 @@ impl<'a> File<'a> {
         }
         res as Offset
     }
+
+    pub fn ftype(&self) -> FileType {
+        if self.inode.attr & 0x8 != 0 || self.inode.name[0] == 0xe5 {
+            FileType::Unknown
+        } else if self.inode.is_dir() {
+            match self.inode.name {
+                x if x == *b".          " => FileType::Parent,
+                x if x == *b"..         " => FileType::Parent,
+                _ => FileType::Directory,
+            }
+        } else {
+            FileType::File
+        }
+    }
 }
 
 impl<'a> ap_storage::file::File for File<'a> {
-    type DirType<'c> = Dir<'c> where Self: 'c;
     type AttrType<'c> = Attr<'c> where Self: 'c;
+    fn attr(&self) -> Self::AttrType<'_> {
+        Attr { file: self }
+    }
 
+    type DirType<'c> = Dir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
         if self.inode.is_dir() {
             return Some(Dir::new(self));
         }
         None
-    }
-
-    fn attr(&self) -> Self::AttrType<'_> {
-        Attr::new(self)
     }
 
     fn open(&self, mut offset: Offset) -> Result<Self, Error> {
@@ -93,21 +103,6 @@ impl<'a> ap_storage::file::File for File<'a> {
         };
 
         Ok(Self::new(self.fs, entry, id))
-    }
-
-    fn meta(&self) -> MetaData {
-        let filetype = if self.inode.attr & 0x8 != 0 || self.inode.name[0] == 0xe5 {
-            FileType::Unknown
-        } else if self.inode.is_dir() {
-            FileType::Directory
-        } else {
-            FileType::File
-        };
-        MetaData {
-            size: self.size(),
-            filetype,
-            id: self.id,
-        }
     }
 }
 

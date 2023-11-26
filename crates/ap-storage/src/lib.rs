@@ -11,7 +11,6 @@ pub type Error = anyhow::Error;
 pub mod attr;
 pub mod directory;
 pub mod file;
-pub mod meta;
 mod read;
 mod write;
 

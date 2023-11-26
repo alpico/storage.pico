@@ -15,7 +15,7 @@ pub mod file;
 
 use dir::Dir;
 
-use ap_storage::{meta::FileType, Error, FileSystem, Offset, Read, ReadExt};
+use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_ext4::{inode::Inode, superblock::SuperBlock};
 
 #[derive(Clone)]

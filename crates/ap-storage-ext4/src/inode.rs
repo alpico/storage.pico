@@ -1,7 +1,5 @@
 //! Sparse inode definition.
 
-use ap_storage::meta::FileType;
-
 /// Sparse inode definition.
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -38,21 +36,16 @@ pub struct Inode {
     version_hi: u32,
     _projid: u32,
 }
+
 impl Inode {
-    /// The file type.
-    pub fn ftype(&self) -> FileType {
-        match self.mode >> 12 {
-            0x8 => FileType::File,
-            0x4 => FileType::Directory,
-            0xa => FileType::SymLink,
-            _ => FileType::Unknown,
-        }
+    fn is_file(&self) -> bool {
+        self.mode >> 12 == 0x8
     }
 
     /// The size of the file.
     pub fn size(&self, sb_feature_incompat: u32) -> u64 {
         // this is the ext2 heuristic
-        if sb_feature_incompat & 0x4000 != 0 || self.ftype() == FileType::File {
+        if sb_feature_incompat & 0x4000 != 0 || self.is_file() {
             ((self.size_hi as u64) << 32) | self.size_lo as u64
         } else {
             self.size_lo as u64

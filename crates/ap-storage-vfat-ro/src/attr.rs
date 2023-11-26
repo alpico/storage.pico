@@ -1,50 +1,54 @@
 //! File attributes for vfat.
 
-use super::{file::File, Error};
-use ap_storage::attr;
+use super::file::File;
+use ap_storage::attr::{AttrType, Attributes};
 use ap_util_slice_writer::*;
 
 pub struct Attr<'a> {
-    file: &'a File<'a>,
-    offset: usize,
+    pub(crate) file: &'a File<'a>,
 }
 
-impl<'a> Attr<'a> {
-    pub(crate) fn new(file: &'a File<'a>) -> Self {
-        Self { file, offset: 0 }
+impl<'a> IntoIterator for Attr<'a> {
+    type Item = &'a (AttrType, &'a str);
+    type IntoIter = core::slice::Iter<'a, (AttrType, &'a str)>;
+    fn into_iter(self) -> Self::IntoIter {
+        [
+            (AttrType::Raw, "ftype"),
+            (AttrType::U64, "attr"),
+            (AttrType::U64, "id"),
+            (AttrType::U64, "size"),
+            (AttrType::I64, "atime"),
+            (AttrType::I64, "btime"),
+            (AttrType::I64, "mtime"),
+        ]
+        .iter()
     }
 }
 
-/// A sorted list of fields.
-type AttrType = (
-    &'static str,
-    fn(&mut SliceWriter, &File) -> Result<(), core::fmt::Error>,
-);
-const ATTRS: [AttrType; 6] = [
-    ("atime", |buf, file| core::write!(buf, "{:x}", file.inode.mtime())),
-    ("attr", |buf, file| core::write!(buf, "{:x}", file.inode.attr() as u64)),
-    ("btime", |buf, file| core::write!(buf, "{:x}", file.inode.mtime())),
-    ("id", |buf, file| core::write!(buf, "{:x}", file.id)),
-    ("mtime", |buf, file| core::write!(buf, "{:x}", file.inode.mtime())),
-    ("size", |buf, file| core::write!(buf, "{:x}", file.size())),
-];
-
-impl<'a> attr::Attributes for Attr<'a> {
-    fn next(&mut self, name: &mut [u8], value: &mut [u8]) -> Result<Option<attr::Entry>, Error> {
-        let Some((n, f)) = ATTRS.get(self.offset) else {
-            return Ok(None);
-        };
-
-        let mut name = SliceWriter(name, 0);
+impl<'a> Attributes<'a> for Attr<'a> {
+    fn get_raw(&mut self, name: &str, value: &mut [u8]) -> Option<usize> {
         let mut value = SliceWriter(value, 0);
+        match name {
+            "ftype" => write!(value, "{:?}", self.file.ftype()).ok()?,
+            _ => return None,
+        }
+        Some(value.1)
+    }
 
-        core::write!(&mut name, "{}", n)?;
-        f(&mut value, self.file)?;
-
-        self.offset += 1;
-        Ok(Some(attr::Entry {
-            name_len: name.1,
-            value_len: value.1,
-        }))
+    fn get_u64(&mut self, name: &str) -> Option<u64> {
+        Some(match name {
+            "attr" => self.file.inode.attr() as u64,
+            "id" => self.file.id,
+            "size" => self.file.size(),
+            _ => return None,
+        })
+    }
+    fn get_i64(&mut self, name: &str) -> Option<i64> {
+        Some(match name {
+            "atime" => self.file.inode.atime(),
+            "btime" => self.file.inode.btime(),
+            "mtime" => self.file.inode.mtime(),
+            _ => return None,
+        })
     }
 }

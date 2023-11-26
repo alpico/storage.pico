@@ -3,7 +3,7 @@
 use super::{file::File, DirectoryEntry, Error, Offset};
 use ap_storage::{
     directory::{DirEntry, DirIterator},
-    meta::FileType,
+    file::FileType,
     Read, ReadExt,
 };
 

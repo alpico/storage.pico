@@ -1,25 +1,21 @@
 //! File implementation for partitions.
 
-use crate::{dir::PartitionDir, Partition};
-use ap_storage::{
-    attr::EmptyAttributes,
-    file::File,
-    meta::{FileType, MetaData},
-    Error, Offset, Read, ReadExt,
-};
+use crate::{attr::Attr, dir::PartitionDir, Partition};
+use ap_storage::{file::File, Error, Offset, Read, ReadExt};
 
 pub struct PartitionFile<'a> {
     pub(crate) disk: &'a dyn Read,
+    // the absolute offset of the partition entry
+    pub(crate) id: Offset,
     // the absolute offset on the disk
     pub(crate) offset: Offset,
     // the len in bytes
-    len: Offset,
+    pub(crate) len: Offset,
+    pub(crate) drive: u8,
+    pub(crate) typ: u8,
 }
 
 impl<'a> PartitionFile<'a> {
-    pub fn new(disk: &'a dyn Read, offset: Offset, len: Offset) -> Self {
-        Self { disk, offset, len }
-    }
     /// Check wether this File could contain other partitions as well.
     pub fn is_dir(&self) -> bool {
         let buf: [u8; 2] = self.disk.read_object(self.offset + 0x1fe).unwrap_or([0, 0]);
@@ -38,9 +34,9 @@ impl Read for PartitionFile<'_> {
 }
 
 impl File for PartitionFile<'_> {
-    type AttrType<'c> = EmptyAttributes where Self: 'c;
+    type AttrType<'c> = Attr<'c> where Self: 'c;
     fn attr(&self) -> Self::AttrType<'_> {
-        EmptyAttributes
+        crate::attr::Attr { file: self }
     }
 
     type DirType<'a> = PartitionDir<'a> where Self: 'a;
@@ -56,7 +52,8 @@ impl File for PartitionFile<'_> {
         if part > 4 {
             return Err(anyhow::anyhow!("invalid number"));
         }
-        let partition: Partition = self.disk.read_object(self.offset + 0x1be + part * 0x10)?;
+        let ofs = self.offset + 0x1be + part * 0x10;
+        let partition: Partition = self.disk.read_object(ofs)?;
         let offset = self.offset + (partition.lba as u64) * 512;
         let len = if offset >= self.offset + self.len {
             0
@@ -68,22 +65,9 @@ impl File for PartitionFile<'_> {
             disk: self.disk,
             offset,
             len,
+            id: ofs,
+            typ: partition.typ,
+            drive: partition.drive,
         })
-    }
-    /// Get the metadata for this file.
-    fn meta(&self) -> MetaData {
-        let filetype = if self.len == 0 {
-            FileType::Unknown
-        } else if self.is_dir() {
-            FileType::Directory
-        } else {
-            FileType::File
-        };
-
-        MetaData {
-            size: self.len,
-            id: self.offset,
-            filetype,
-        }
     }
 }

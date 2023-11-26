@@ -1,84 +1,71 @@
 //! File attributes for ext4.
-
-use crate::{file::Ext4File, Error};
-use ap_storage::attr;
+use crate::file::Ext4File;
+use ap_storage::attr::{AttrType, Attributes};
 use ap_util_slice_writer::*;
 
 pub struct Attr<'a> {
-    file: &'a Ext4File<'a>,
-    offset: usize,
+    pub(crate) file: &'a Ext4File<'a>,
 }
 
-impl<'a> Attr<'a> {
-    pub(crate) fn new(file: &'a Ext4File<'a>) -> Self {
-        Self { file, offset: 0 }
+impl<'a> IntoIterator for Attr<'a> {
+    type Item = &'a (AttrType, &'a str);
+    type IntoIter = core::slice::Iter<'a, (AttrType, &'a str)>;
+    fn into_iter(self) -> Self::IntoIter {
+        [
+            (AttrType::Raw, "ftype"),
+            (AttrType::U64, "blocks"),
+            (AttrType::U64, "flags"),
+            (AttrType::U64, "generation"),
+            (AttrType::U64, "gid"),
+            (AttrType::U64, "id"),
+            (AttrType::U64, "mode"),
+            (AttrType::U64, "nlinks"),
+            (AttrType::U64, "size"),
+            (AttrType::U64, "uid"),
+            (AttrType::U64, "version"),
+            (AttrType::U64, "xattr"),
+            (AttrType::I64, "atime"),
+            (AttrType::I64, "crtime"),
+            (AttrType::I64, "ctime"),
+            (AttrType::I64, "mtime"),
+        ]
+        .iter()
     }
 }
 
-/// A macro to simplify the following code.
-macro_rules! get {
-    ($name:ident) => {{
-        (stringify!($name), |buf, file| write!(buf, "{:x}", file.inode.$name()))
-    }};
-    ($name:ident, $param:expr) => {{
-        (stringify!($name), $param)
-    }};
-}
-
-/// The type for the attributes list.
-type AttrType = (
-    &'static str,
-    fn(&mut SliceWriter, &Ext4File) -> Result<(), core::fmt::Error>,
-);
-
-/// A sorted list of file attributes.
-const ATTRS: [AttrType; 16] = [
-    get!(atime),
-    get!(blocks, |b, f| write!(b, "{:x}", f.inode.blocks(f.fs.sb.block_size()))),
-    get!(crtime),
-    get!(ctime),
-    get!(flags),
-    get!(ftype, |b, f| write!(b, "{:?}", f.inode.ftype())),
-    get!(generation),
-    get!(gid),
-    get!(id, |b, f| write!(b, "{:x}", f.nr)),
-    get!(mode),
-    get!(mtime),
-    get!(nlinks),
-    get!(size, |b, f| write!(b, "{:x}", f.inode.size(f.fs.sb.feature_incompat))),
-    get!(uid),
-    get!(version),
-    get!(xattr),
-];
-
-impl<'a> attr::Attributes for Attr<'a> {
-    fn next(&mut self, name: &mut [u8], value: &mut [u8]) -> Result<Option<attr::Entry>, Error> {
-        let Some((n, f)) = ATTRS.get(self.offset) else {
-            return Ok(None);
-        };
-
-        let mut name = SliceWriter(name, 0);
+impl<'a> Attributes<'a> for Attr<'a> {
+    fn get_raw(&mut self, name: &str, value: &mut [u8]) -> Option<usize> {
         let mut value = SliceWriter(value, 0);
-
-        name.write_str(n)?;
-        f(&mut value, self.file)?;
-
-        self.offset += 1;
-        Ok(Some(attr::Entry {
-            name_len: name.1,
-            value_len: value.1,
-        }))
+        match name {
+            "ftype" => write!(value, "{:?}", self.file.ftype()).ok()?,
+            _ => return None,
+        }
+        Some(value.1)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn attrs_is_sorted() {
-        let mut iter = super::ATTRS.into_iter();
-        let first = iter.next().unwrap();
-        assert!(iter
-            .try_fold(first, |prev, cur| { (prev < cur).then_some(cur) })
-            .is_some())
+    fn get_u64(&mut self, name: &str) -> Option<u64> {
+        Some(match name {
+            "blocks" => self.file.inode.blocks(self.file.fs.sb.block_size()),
+            "flags" => self.file.inode.flags().into(),
+            "generation" => self.file.inode.generation().into(),
+            "gid" => self.file.inode.gid().into(),
+            "id" => self.file.nr,
+            "mode" => self.file.inode.mode().into(),
+            "nlinks" => self.file.inode.nlinks().into(),
+            "size" => self.file.inode.size(self.file.fs.sb.feature_incompat),
+            "uid" => self.file.inode.uid().into(),
+            "version" => self.file.inode.version(),
+            "xattr" => self.file.inode.xattr(),
+            _ => return None,
+        })
+    }
+    fn get_i64(&mut self, name: &str) -> Option<i64> {
+        Some(match name {
+            "atime" => self.file.inode.atime(),
+            "crtime" => self.file.inode.crtime(),
+            "ctime" => self.file.inode.ctime(),
+            "mtime" => self.file.inode.mtime(),
+            _ => return None,
+        })
     }
 }

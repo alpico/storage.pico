@@ -35,7 +35,12 @@ impl<'a> DirIterator for Dir<'a> {
         }
         let offset = self.offset;
         self.offset += header.rec_len as u64;
-        let mut typ = header.typ();
+        let mut typ = match header.file_type {
+            1 => FileType::File,
+            2 => FileType::Directory,
+            7 => FileType::SymLink,
+            _ => FileType::Unknown,
+        };
         if typ == FileType::Directory && offset < 0x18 {
             typ = FileType::Parent;
         }

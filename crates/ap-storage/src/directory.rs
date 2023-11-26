@@ -1,7 +1,7 @@
 //! Support for directories.
 
 use super::Error;
-use crate::meta::FileType;
+use crate::file::FileType;
 
 /// Directory entry.
 #[derive(Debug)]

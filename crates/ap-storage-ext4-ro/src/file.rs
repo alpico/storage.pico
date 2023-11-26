@@ -1,7 +1,7 @@
 //! File support.
 
 use super::{attr, Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
-use ap_storage::{file::File, meta::MetaData};
+use ap_storage::file::File;
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
@@ -53,17 +53,27 @@ impl<'a> Ext4File<'a> {
         cache.cnt = res.1;
         Ok(res)
     }
+
+    /// The type of this file.
+    pub fn ftype(&self) -> FileType {
+        match self.inode.mode() >> 12 {
+            0x8 => FileType::File,
+            0x4 => FileType::Directory,
+            0xa => FileType::SymLink,
+            _ => FileType::Unknown,
+        }
+    }
 }
 
 impl<'a> File for Ext4File<'a> {
     type AttrType<'c> = attr::Attr<'c> where Self: 'c;
     fn attr(&self) -> Self::AttrType<'_> {
-        attr::Attr::new(self)
+        crate::attr::Attr { file: self }
     }
 
     type DirType<'c> = Dir<'c> where Self: 'c;
     fn dir(&self) -> Option<Self::DirType<'_>> {
-        if self.inode.ftype() == FileType::Directory && (self.inode.version() != 1 || !self.leaf_optimization) {
+        if self.ftype() == FileType::Directory && (self.inode.version() != 1 || !self.leaf_optimization) {
             return Some(Dir::new(self));
         }
         None
@@ -73,19 +83,11 @@ impl<'a> File for Ext4File<'a> {
     where
         Self: Sized,
     {
-        if self.inode.ftype() != FileType::Directory {
+        if self.ftype() != FileType::Directory {
             return Err(anyhow::anyhow!("not a directory"));
         }
         let header: DirEntryHeader = (self as &dyn Read).read_object(offset)?;
         Self::new(self.fs, header.inode())
-    }
-
-    fn meta(&self) -> MetaData {
-        MetaData {
-            size: self.inode.size(self.fs.sb.feature_incompat),
-            filetype: self.inode.ftype(),
-            id: self.nr,
-        }
     }
 }
 
@@ -101,7 +103,7 @@ impl<'a> Read for Ext4File<'a> {
         let valid_size = core::cmp::min(size - offset, buf.len() as Offset) as usize;
 
         // small symlinks are stored inline
-        if self.inode.ftype() == FileType::SymLink && size <= 60 {
+        if self.ftype() == FileType::SymLink && size <= 60 {
             buf[..valid_size].copy_from_slice(unsafe {
                 core::slice::from_raw_parts(
                     (self.inode.blocks.as_ptr() as *const u8).add(offset as usize),
