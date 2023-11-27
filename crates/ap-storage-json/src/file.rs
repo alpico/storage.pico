@@ -1,3 +1,5 @@
+//! File interface for JSON FS.
+
 use super::*;
 
 pub struct JsonFile<'a> {
@@ -5,11 +7,20 @@ pub struct JsonFile<'a> {
     pub(crate) id: u64,
 }
 impl<'a> JsonFile<'a> {
+    /// Create a new JsonFile.
     pub fn new(value: &'a serde_json::Value, name: &str) -> Self {
         Self {
             value,
             id: name.as_ptr() as u64,
         }
+    }
+
+    /// Size in bytes.
+    pub fn size(&self) -> u64 {
+        let Ok(v) = serde_json::to_string(self.value) else {
+            return 0;
+        };
+        v.as_bytes().len() as u64
     }
 }
 

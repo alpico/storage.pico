@@ -1,7 +1,13 @@
 //! Disk usage of the whole filesystem.
 
 use al_mmap::Mmap;
-use ap_storage::{attr::Attributes, directory::DirIterator, file::File, file::FileType, Error, FileSystem, Read};
+use ap_storage::{
+    attr::{Attributes, SIZE},
+    directory::DirIterator,
+    file::File,
+    file::FileType,
+    Error, FileSystem, Read,
+};
 use ap_storage_linux::LinuxDisk;
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options;
@@ -40,7 +46,7 @@ fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
 
         count += 1;
         let child = dir.open(entry.offset)?;
-        size += child.attr().get_u64("size").unwrap_or(0);
+        size += child.attr().get(SIZE, &mut []).and_then(|x| x.as_u64()).unwrap_or(0);
         if entry.typ == FileType::Directory {
             let (x, y) = visit(&child)?;
             count += x;

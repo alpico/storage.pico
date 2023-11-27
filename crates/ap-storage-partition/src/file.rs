@@ -32,7 +32,6 @@ impl<'a> PartitionFile<'a> {
             FileType::File
         }
     }
-
 }
 
 impl Read for PartitionFile<'_> {

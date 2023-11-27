@@ -4,7 +4,7 @@
 
 use ap_storage::directory::{DirEntry, DirIterator};
 use ap_storage::{
-    attr::{AttrType, Attributes},
+    attr::{Attributes, Value},
     file::File,
     Error, FileSystem, Read,
 };
@@ -125,8 +125,8 @@ pub enum UnifiedAttr<'a> {
 }
 
 impl<'a> IntoIterator for UnifiedAttr<'a> {
-    type Item = &'a (AttrType, &'a str);
-    type IntoIter = core::slice::Iter<'a, (AttrType, &'a str)>;
+    type Item = &'a &'a str;
+    type IntoIter = core::slice::Iter<'a, &'a str>;
     fn into_iter(self) -> Self::IntoIter {
         match self {
             UnifiedAttr::Ext4(f) => f.into_iter(),
@@ -137,28 +137,12 @@ impl<'a> IntoIterator for UnifiedAttr<'a> {
     }
 }
 impl<'a> Attributes<'a> for UnifiedAttr<'a> {
-    fn get_raw(&mut self, name: &str, value: &mut [u8]) -> Option<usize> {
+    fn get(&self, name: &str, buf: &mut [u8]) -> Option<Value> {
         match self {
-            UnifiedAttr::Ext4(f) => f.get_raw(name, value),
-            UnifiedAttr::Json(f) => f.get_raw(name, value),
-            UnifiedAttr::Vfat(f) => f.get_raw(name, value),
-            UnifiedAttr::Partition(f) => f.get_raw(name, value),
-        }
-    }
-    fn get_u64(&mut self, name: &str) -> Option<u64> {
-        match self {
-            UnifiedAttr::Ext4(f) => f.get_u64(name),
-            UnifiedAttr::Json(f) => f.get_u64(name),
-            UnifiedAttr::Vfat(f) => f.get_u64(name),
-            UnifiedAttr::Partition(f) => f.get_u64(name),
-        }
-    }
-    fn get_i64(&mut self, name: &str) -> Option<i64> {
-        match self {
-            UnifiedAttr::Ext4(f) => f.get_i64(name),
-            UnifiedAttr::Json(f) => f.get_i64(name),
-            UnifiedAttr::Vfat(f) => f.get_i64(name),
-            UnifiedAttr::Partition(f) => f.get_i64(name),
+            UnifiedAttr::Ext4(f) => f.get(name, buf),
+            UnifiedAttr::Json(f) => f.get(name, buf),
+            UnifiedAttr::Vfat(f) => f.get(name, buf),
+            UnifiedAttr::Partition(f) => f.get(name, buf),
         }
     }
 }

@@ -1,5 +1,5 @@
 use ap_storage::{
-    attr::{AttrType, Attributes},
+    attr::{Attributes, Value},
     directory::DirIterator,
     file::File,
     file::FileType,
@@ -46,14 +46,14 @@ fn visit(opts: &CommandOptions, f: &impl File, path: &String, depth: usize) -> R
         println!("{path}/{st}");
         if opts.attr {
             let f = f.open(entry.offset).unwrap();
-            let mut attr = f.attr();
-            for (typ, name) in f.attr() {
-                match typ {
-                    AttrType::U64 => println!("\t{name}\t{:#x}", attr.get_u64(name).unwrap()),
-                    AttrType::I64 => println!("\t{name}\t{}", attr.get_i64(name).unwrap()),
-                    AttrType::Raw => {
-                        let mut value = [0u8; 256];
-                        let count = attr.get_raw(name, &mut value).unwrap();
+            let attr = f.attr();
+            let mut value = [0u8; 256];
+            for name in f.attr() {
+                match attr.get(name, &mut value).unwrap() {
+                    Value::U64(v) => println!("\t{name}\t{:#x}", v),
+                    Value::I64(v) => println!("\t{name}\t{}", v),
+                    Value::Bool(v) => println!("\t{name}\t{:?}", v),
+                    Value::Raw(count) => {
                         let v = core::str::from_utf8(&value[..core::cmp::min(value.len(), count)]).unwrap_or_default();
                         println!("\t{name}\t{v}");
                     }

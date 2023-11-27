@@ -2,7 +2,13 @@
 
 use al_crunch_pool::{execute, Options, Sender};
 use al_mmap::Mmap;
-use ap_storage::{attr::Attributes, directory::DirIterator, file::File, file::FileType, Error, FileSystem};
+use ap_storage::{
+    attr::{Attributes, ID, SIZE},
+    directory::DirIterator,
+    file::File,
+    file::FileType,
+    Error, FileSystem,
+};
 use ap_storage_ext4_ro::{file::Ext4File, Ext4Fs};
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options as GumdropOptions;
@@ -55,7 +61,7 @@ fn visit(sender: &Sender<WorkerState>, nr: u64, worker: &mut WorkerState) {
         let Ok(child) = dir.open(entry.offset) else {
             continue;
         };
-        worker.size += child.attr().get_u64("size").unwrap_or(0);
+        worker.size += child.attr().get(SIZE, &mut []).and_then(|x| x.as_u64()).unwrap_or(0);
 
         if entry.typ == FileType::Directory {
             let sender2 = sender.clone();
@@ -101,7 +107,11 @@ fn main() -> Result<(), Error> {
                     .lookup_path(opts.start.as_bytes())
                     .expect("start directory not found");
 
-                visit(sender, child.attr().get_u64("id").unwrap(), &mut state);
+                visit(
+                    sender,
+                    child.attr().get(ID, &mut []).expect("no ID").as_u64().unwrap(),
+                    &mut state,
+                );
                 (state.count, state.size)
             },
             |mut x, y| {
