@@ -48,15 +48,15 @@ where
     where
         Self: Sized,
     {
-        let children = self.value.as_object().ok_or(anyhow::anyhow!("not an object"))?;
-        let child = children.keys().nth(offset as usize).ok_or(anyhow::anyhow!("eof"))?;
+        let children = self.value.as_object().ok_or(Error::msg("not an object"))?;
+        let child = children.keys().nth(offset as usize).ok_or(Error::msg("eof"))?;
         Ok(JsonFile::new(&children[child], child))
     }
 
     /// A more efficient lookup.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
         let name = core::str::from_utf8(name).map_err(Error::msg)?;
-        let children = self.value.as_object().ok_or(anyhow::anyhow!("not an object"))?;
+        let children = self.value.as_object().ok_or(Error::msg("not an object"))?;
         let Some(value) = children.get(name) else {
             return Ok(None);
         };

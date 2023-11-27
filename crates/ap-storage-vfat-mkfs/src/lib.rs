@@ -72,7 +72,7 @@ impl MakeVFatFS {
     /// The size of the sector in bytes. Must be a power of two and at least 128.
     pub fn sector_size(&mut self, v: u16) -> Result<Self, Error> {
         if !v.is_power_of_two() || v < 128 {
-            return Err(anyhow::anyhow!("sector_size must be a power of two and at least 128",));
+            return Err(Error::msg("sector_size must be a power of two and at least 128"));
         }
         self.sector_size = v;
         Ok(*self)
@@ -81,7 +81,7 @@ impl MakeVFatFS {
     /// Sectors per cluster. A power of two larger than 0.
     pub fn per_cluster(&mut self, v: u8) -> Result<Self, Error> {
         if !v.is_power_of_two() || v == 0 {
-            return Err(anyhow::anyhow!("per_clusters must be one of [1,2,4,8,16,32,64,128]"));
+            return Err(Error::msg("per_clusters must be one of [1,2,4,8,16,32,64,128]"));
         }
         self.per_cluster = v;
         Ok(*self)
@@ -173,7 +173,7 @@ impl MakeVFatFS {
         // for the FAT12 and FAT16 variants the root-sectors and the two reserved entries have to be accounted for
         let available_sectors = sectors - core::cmp::min(sectors, reserved_sectors + root_sectors);
         if available_sectors < per_cluster + num_fats {
-            return Err(anyhow::anyhow!("not enough space"));
+            return Err(Error::msg("not enough space"));
         }
 
         // start with FAT12
@@ -197,7 +197,7 @@ impl MakeVFatFS {
         if cluster32 < 0xfff_fff6 {
             return Ok((Variant::Fat32, fat_size32));
         }
-        Err(anyhow::anyhow!("disk to large"))
+        Err(Error::msg("disk to large"))
     }
 
     /// Return the sector number where the data area starts without alignment.

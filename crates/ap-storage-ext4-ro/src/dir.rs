@@ -30,7 +30,7 @@ impl<'a> DirIterator for Dir<'a> {
         if nlen > 0 {
             let n = self.parent.read_bytes(self.offset + O as u64, &mut name[..nlen])?;
             if n < nlen {
-                return Err(anyhow::anyhow!("truncated dir"));
+                return Err(Error::msg("truncated dir"));
             }
         }
         let offset = self.offset;

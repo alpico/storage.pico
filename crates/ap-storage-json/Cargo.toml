@@ -10,4 +10,3 @@ serde = { version = "1.0.192", default-features = false, features = ["alloc"] }
 serde_json = { version = "1.0.108", default-features = false, features = ["alloc"] }
 ap-storage = { path = "../ap-storage" }
 ap-util-slice-writer={ path = "../ap-util-slice-writer"}
-anyhow = { version = "1.0.75", default-features = false }

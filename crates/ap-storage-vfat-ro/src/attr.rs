@@ -1,7 +1,7 @@
 //! File attributes for vfat.
 
 use super::file::File;
-use ap_storage::attr::{self, Attributes, Value, new_attr};
+use ap_storage::attr::{self, new_attr, Attributes, Value};
 use ap_util_slice_writer::*;
 
 new_attr!(ATTR, U64, "File attribute bits.");

@@ -52,7 +52,7 @@ impl WriteExt for &dyn Write {
 }
 
 /// An exact write could only be partially done.
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 pub struct PartialWriteError;
 
 impl core::fmt::Display for PartialWriteError {

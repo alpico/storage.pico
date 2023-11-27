@@ -45,7 +45,7 @@ pub trait File: crate::Read {
     where
         Self: Sized,
     {
-        let mut dir = self.dir().ok_or(anyhow::anyhow!("not a directory"))?;
+        let mut dir = self.dir().ok_or(Error::msg("not a directory"))?;
         let mut buf = [0u8; 256];
         while let Some(entry) = dir.next(&mut buf)? {
             if entry.typ == FileType::Unknown {
@@ -70,7 +70,7 @@ pub trait File: crate::Read {
                 continue;
             }
             let Some(x) = res.lookup(name)? else {
-                return Err(anyhow::anyhow!("file not found"));
+                return Err(Error::msg("file not found"));
             };
             res = x;
         }

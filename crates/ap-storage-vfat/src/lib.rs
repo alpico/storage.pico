@@ -5,7 +5,6 @@
 
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
-
 // This crate contains on-disk structures that are already defined in various specifications.
 // There is no need to copy-paste their docs here.
 #![allow(missing_docs)]

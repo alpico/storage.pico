@@ -27,7 +27,7 @@ impl JsonFS {
             ofs += n;
             if let Err(e) = serde_json::from_slice::<serde_json::Value>(&data[..]) {
                 if !e.is_eof() {
-                    return Err(anyhow::anyhow!("invalid JSON"));
+                    return Err(Error::msg("invalid JSON"));
                 }
             }
             data.resize(ofs + 4096, 0);
@@ -37,7 +37,7 @@ impl JsonFS {
         // convert to a Value
         let root: serde_json::Value = serde_json::from_slice(&data).map_err(Error::msg)?;
         if !root.is_object() {
-            return Err(anyhow::anyhow!("not an object"));
+            return Err(Error::msg("not an object"));
         }
         Ok(Self { root })
     }

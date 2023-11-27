@@ -82,7 +82,7 @@ impl<'a> ap_storage::file::File for File<'a> {
 
     fn open(&self, mut offset: Offset) -> Result<Self, Error> {
         if !self.inode.is_dir() {
-            return Err(anyhow::anyhow!("not a directory"));
+            return Err(Error::msg("not a directory"));
         }
         if self.is_root() {
             if offset < 2 {

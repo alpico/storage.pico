@@ -75,22 +75,22 @@ impl<'a> VFatFS<'a> {
 
         // validate the super-block
         if buf[511] != 0xaa || buf[510] != 0x55 {
-            return Err(anyhow::anyhow!("boot signature"));
+            return Err(Error::msg("boot signature"));
         }
         if bpb.bytes_per_sector < 128 || !bpb.bytes_per_sector.is_power_of_two() {
-            return Err(anyhow::anyhow!("bytes per sector"));
+            return Err(Error::msg("bytes per sector"));
         }
         if bpb.sectors_per_cluster == 0 || !bpb.sectors_per_cluster.is_power_of_two() {
-            return Err(anyhow::anyhow!("bytes per cluster"));
+            return Err(Error::msg("bytes per cluster"));
         }
         if bpb.reserved_sectors == 0 {
-            return Err(anyhow::anyhow!("reserved sectors"));
+            return Err(Error::msg("reserved sectors"));
         }
         if bpb.num_fats == 0 {
-            return Err(anyhow::anyhow!("FAT count"));
+            return Err(Error::msg("FAT count"));
         }
         if bpb.media < 0xf8 && bpb.media != 0xf0 {
-            return Err(anyhow::anyhow!("media byte"));
+            return Err(Error::msg("media byte"));
         }
 
         // select the 16-bit or 32-bit version of a field
@@ -144,7 +144,7 @@ impl<'a> VFatFS<'a> {
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
         if cluster == 0 || cluster > self.clusters + 2 {
-            return Err(anyhow::anyhow!("eof"));
+            return Err(Error::msg("eof"));
         }
         let ofs = self.fat_start + cluster as Offset * self.variant as Offset / 8;
 

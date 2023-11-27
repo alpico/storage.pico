@@ -36,7 +36,7 @@ impl<'a> PartitionFS<'a> {
     pub fn new(disk: &'a dyn Read) -> Result<Self, Error> {
         let buf: [u8; 512] = disk.read_object(0)?;
         if buf[0x1fe] != 0x55 || buf[0x1ff] != 0xaa {
-            return Err(anyhow::anyhow!("not an MBR"));
+            return Err(Error::msg("not an MBR"));
         }
         // find the maximum length all partitions occupy
         let primary: [Partition; 4] = unsafe { core::ptr::read_unaligned(buf.as_ptr().add(0x1be).cast()) };
@@ -50,7 +50,7 @@ impl<'a> PartitionFS<'a> {
 
 impl<'a> FileSystem<'a> for PartitionFS<'a> {
     type FileType = file::PartitionFile<'a>;
-    fn root(&'a self) -> Result<<Self as FileSystem<'a>>::FileType, anyhow::Error> {
+    fn root(&'a self) -> Result<<Self as FileSystem<'a>>::FileType, Error> {
         Ok(file::PartitionFile {
             disk: self.disk,
             offset: 0,

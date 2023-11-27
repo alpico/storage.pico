@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 al-crunch-pool = { git = "https://github.com/alpico/linux.pico.git" }
 al-mmap = { git = "https://github.com/alpico/linux.pico.git" }
-anyhow = "1.0.75"
 ap-storage = { path="../ap-storage" }
 ap-storage-ext4-ro = { path="../ap-storage-ext4-ro" }
 ap-storage-linux = { path="../ap-storage-linux" }

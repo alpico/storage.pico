@@ -5,7 +5,7 @@ pub struct Ext4Extents<'a>(pub &'a Ext4File<'a>);
 #[cfg(not(feature = "file_extents"))]
 impl<'a> Ext4Extents<'a> {
     pub fn search(&self, _block: u64) -> Result<(u64, u64), Error> {
-        Err(anyhow::anyhow!("extents not supported"))
+        Err(Error::msg("extents not supported"))
     }
 }
 #[cfg(feature = "file_extents")]
@@ -54,10 +54,10 @@ impl<'a> Ext4Extents<'a> {
         loop {
             let header: Ext4ExtentHeader = self.get(ofs)?;
             if header.magic != 0xf30a {
-                return Err(anyhow::anyhow!("extent magic"));
+                return Err(Error::msg("extent magic"));
             }
             if ofs != 0 && depth != header.depth + 1 {
-                return Err(anyhow::anyhow!("extent depth"));
+                return Err(Error::msg("extent depth"));
             }
             if header.depth == 0 {
                 ofs = self.search_binary(block, ofs + 12, header.entries as usize)?;

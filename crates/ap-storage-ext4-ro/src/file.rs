@@ -85,7 +85,7 @@ impl<'a> File for Ext4File<'a> {
         Self: Sized,
     {
         if self.ftype() != FileType::Directory {
-            return Err(anyhow::anyhow!("not a directory"));
+            return Err(Error::msg("not a directory"));
         }
         let header: DirEntryHeader = (self as &dyn Read).read_object(offset)?;
         Self::new(self.fs, header.inode())

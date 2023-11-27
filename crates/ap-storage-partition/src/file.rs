@@ -58,10 +58,10 @@ impl File for PartitionFile<'_> {
         None
     }
 
-    fn open(&self, offset: u64) -> Result<Self, anyhow::Error> {
+    fn open(&self, offset: u64) -> Result<Self, Error> {
         let part = offset;
         if part > 4 {
-            return Err(anyhow::anyhow!("invalid number"));
+            return Err(Error::msg("invalid number"));
         }
         let ofs = self.offset + 0x1be + part * 0x10;
         let partition: Partition = self.disk.read_object(ofs)?;

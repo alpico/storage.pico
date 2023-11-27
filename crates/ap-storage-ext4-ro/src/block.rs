@@ -6,7 +6,7 @@ pub struct Ext4Blocks<'a>(pub &'a Ext4File<'a>);
 #[cfg(not(feature = "file_blocks"))]
 impl<'a> Ext4Blocks<'a> {
     pub fn search(&self, mut _block: u64) -> Result<(u64, u64), Error> {
-        Err(anyhow::anyhow!("blocks not supported"))
+        Err(Error::msg("blocks not supported"))
     }
 }
 

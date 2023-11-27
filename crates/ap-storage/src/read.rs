@@ -63,7 +63,7 @@ impl ReadExt for &dyn Read {
 }
 
 /// An exact read could only be partially done.
-#[derive(thiserror::Error, Debug)]
+#[derive(Debug)]
 pub struct PartialReadError;
 
 impl core::fmt::Display for PartialReadError {
