@@ -2,6 +2,7 @@
 
 #![no_std]
 
+/// A type definition for seconds since UNIX_EPOCH.
 pub type Time = i64;
 
 ///Is the given year a leap year?

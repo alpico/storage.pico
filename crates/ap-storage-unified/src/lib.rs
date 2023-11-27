@@ -1,6 +1,9 @@
-//! Unifiy all filesystems.
+//! Unifiy all filesystems by wrapping them into an enum.
 
 #![no_std]
+
+// This is only wrapper code. So no docs required.
+#![allow(missing_docs)]
 
 use ap_storage::directory::{DirEntry, DirIterator};
 use ap_storage::{

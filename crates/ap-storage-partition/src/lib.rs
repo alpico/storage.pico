@@ -6,6 +6,7 @@ mod attr;
 mod dir;
 mod file;
 
+/// A file-system that makes MBR partitions available as files.
 #[derive(Clone)]
 pub struct PartitionFS<'a> {
     disk: &'a dyn Read,
@@ -16,11 +17,17 @@ pub struct PartitionFS<'a> {
 #[repr(C)]
 #[derive(Clone)]
 pub struct Partition {
+    /// The BIOS drive number including the BOOT bit.
     pub drive: u8,
+    /// The obsolete CHS values for starting the partition.
     pub _chs_start: [u8; 3],
+    /// The partition type.
     pub typ: u8,
+    /// The obsolete CHS values for ending the partition.
     pub _chs_end: [u8; 3],
+    /// The logical-block address for the start of the partition.
     pub lba: u32,
+    /// The size of the partition in blocks.
     pub size: u32,
 }
 

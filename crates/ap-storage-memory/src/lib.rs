@@ -31,6 +31,7 @@ impl Read for MemoryCache<'_> {
 pub struct InlineCache<'a, const N: usize>(RefCell<inline::InlineCacheImpl<'a, N>>);
 
 impl<'a, const N: usize> InlineCache<'a, N> {
+    /// Create an inline memory cache.
     pub fn new(parent: &'a dyn Read) -> Self {
         Self(RefCell::new(inline::InlineCacheImpl::new(parent)))
     }

@@ -5,6 +5,7 @@ use ap_storage::file::File;
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
 
+/// File object.
 pub struct Ext4File<'a> {
     pub(crate) fs: &'a Ext4Fs<'a>,
     pub(crate) inode: Inode,

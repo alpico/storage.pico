@@ -6,6 +6,10 @@
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
+// This crate contains on-disk structures that are already defined in various specifications.
+// There is no need to copy-paste their docs here.
+#![allow(missing_docs)]
+
 mod long_entry;
 use ap_util_date::{dos_date2ts, dos_time2ts, Time};
 pub use long_entry::LongEntry;

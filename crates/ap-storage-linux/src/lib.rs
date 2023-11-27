@@ -14,6 +14,7 @@ pub struct LinuxDisk {
 }
 
 impl LinuxDisk {
+    /// Open a read-only disk at the given offset.
     pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
         Ok(Self {
             file: File::open(filename)?,

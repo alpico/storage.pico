@@ -17,6 +17,7 @@
 //! - there are boolean and raw-byte values
 //! - times are defined as nano-seconds since UNIX_EPOCH.
 
+#![no_std]
 
 mod value;
 pub use value::Value;

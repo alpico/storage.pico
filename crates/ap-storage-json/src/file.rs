@@ -1,7 +1,8 @@
-//! File interface for JSON FS.
+//! File interface for JsonFS.
 
 use super::*;
 
+/// File interface for JsonFS.
 pub struct JsonFile<'a> {
     value: &'a serde_json::Value,
     pub(crate) id: u64,

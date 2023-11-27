@@ -27,6 +27,7 @@ pub struct Options {
     pub lower_short_name: bool,
 }
 
+/// An VFAT filesystem.
 #[derive(Clone)]
 pub struct VFatFS<'a> {
     disk: &'a dyn Read,

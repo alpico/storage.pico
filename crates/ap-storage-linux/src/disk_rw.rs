@@ -4,6 +4,7 @@ use ap_storage::Write;
 /// A writeable Linux disk.
 pub struct LinuxDiskRW(LinuxDisk);
 impl LinuxDiskRW {
+    /// Use a file at a certain offset as a Linux disk.
     pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
         Ok(Self(LinuxDisk {
             file: File::options().read(true).write(true).open(filename)?,

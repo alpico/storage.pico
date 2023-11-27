@@ -41,6 +41,7 @@ struct CommandOptions {
     start: String,
 }
 
+/// The state every worker keeps on its own.
 pub struct WorkerState {
     fs: Rc<Ext4Fs<'static>>,
     size: u64,

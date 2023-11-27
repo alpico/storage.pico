@@ -1,3 +1,5 @@
+//! Search for files in a file-system recursively.
+
 use ap_storage::{
     attr::{Attributes, Value},
     directory::DirIterator,
@@ -28,7 +30,7 @@ struct CommandOptions {
     /// Maximum depth. Zero means unlimited.
     depth: usize,
 
-    /// Start directory.
+    /// Start directories.
     #[options(default = "/")]
     start: String,
 }

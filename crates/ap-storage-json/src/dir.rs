@@ -1,5 +1,7 @@
+//! Directory iterator for JsonFS.
 use super::*;
 
+/// Directory iterator for JsonFS.
 pub struct JsonDir<'a> {
     pub keys: serde_json::map::Keys<'a>,
     pub value: &'a serde_json::Map<String, serde_json::Value>,

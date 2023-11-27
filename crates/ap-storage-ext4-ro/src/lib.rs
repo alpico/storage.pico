@@ -18,6 +18,8 @@ use dir::Dir;
 use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_ext4::{inode::Inode, superblock::SuperBlock};
 
+
+/// Read-only Ext{2,3,4} file-system object.
 #[derive(Clone)]
 pub struct Ext4Fs<'a> {
     disk: &'a dyn Read,

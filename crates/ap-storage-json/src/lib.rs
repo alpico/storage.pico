@@ -2,17 +2,20 @@
 //!
 //! - first example of a pseudo-filesystem
 //! - usefull for small in-memory data
+
 use ap_storage::{directory, file::File, file::FileType, Error, FileSystem, Offset, Read};
 
 mod attr;
 mod dir;
 mod file;
 
+/// Making JSON availabe as a `ap_storage::FileSystem`.
 pub struct JsonFS {
     root: serde_json::Value,
 }
 
 impl JsonFS {
+    /// Create a new JsonFS by reading the whole JSON from the disk.
     pub fn new(disk: &dyn Read) -> Result<Self, Error> {
         // Fill the buffer.
         let mut data = vec![0; 4096];
