@@ -1,8 +1,5 @@
 use crate::file::PartitionFile;
-use ap_storage::{
-    attr::{Attributes, Value, FTYPE, ID, SIZE},
-    new_attr,
-};
+use ap_storage::attr::{Attributes, Value, FTYPE, ID, SIZE, new_attr};
 use ap_util_slice_writer::*;
 
 new_attr!(BOOT, Bool, "Boot flag.");

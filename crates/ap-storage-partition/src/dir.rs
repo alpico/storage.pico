@@ -27,7 +27,7 @@ impl DirIterator for PartitionDir<'_> {
 
         let partition: Partition = self.file.disk.read_object(self.file.offset + 0x1be + self.pos * 0x10)?;
         let mut writer = SliceWriter(name, 0);
-        core::write!(&mut writer, "part-{}", self.pos)?;
+        core::write!(&mut writer, "part-{}", self.pos).map_err(Error::msg)?;
 
         let typ = if partition.typ == 0 || partition.size == 0 || writer.1 == 0 {
             FileType::Unknown

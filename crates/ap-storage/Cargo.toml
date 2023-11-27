@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ap-util-attr = { path = "../ap-util-attr" }
 anyhow = { version = "1.0.75", default-features = false }
 thiserror = { version = "1.0.38", package = "thiserror-core", default-features = false }
 

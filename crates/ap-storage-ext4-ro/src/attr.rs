@@ -1,9 +1,6 @@
 //! File attributes for ext4.
 use crate::file::Ext4File;
-use ap_storage::{
-    attr::{self, Attributes, Value},
-    new_attr,
-};
+use ap_storage::attr::{self, Attributes, Value, new_attr};
 use ap_util_slice_writer::*;
 
 new_attr!(BLOCKS, U64, "Number of blocks occupied.");
