@@ -56,7 +56,7 @@ struct CommandOptions {
     /// Number of root entries for fat12 and fat16 variants.
     #[options(meta = "N")]
     root_entries: UnsetField<u16>,
-    /// Power of two in the range[128,32768]. Typically 512 or 4096.
+    /// Power of two in the range {128,32768}. Typically 512 or 4096.
     #[options(meta = "N")]
     sector_size: UnsetField<u16>,
     /// Volume id.

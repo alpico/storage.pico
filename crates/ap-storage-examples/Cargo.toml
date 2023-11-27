@@ -1,0 +1,18 @@
+[package]
+name = "ap-storage-examples"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+al-crunch-pool = { git = "https://github.com/alpico/linux.pico.git" }
+al-mmap = { git = "https://github.com/alpico/linux.pico.git" }
+anyhow = "1.0.75"
+ap-storage = { path="../ap-storage" }
+ap-storage-ext4-ro = { path="../ap-storage-ext4-ro" }
+ap-storage-linux = { path="../ap-storage-linux" }
+ap-storage-memory = { path="../ap-storage-memory" }
+ap-storage-unified = { path="../ap-storage-unified" }
+ap-storage-vfat-mkfs = { path="../ap-storage-vfat-mkfs" }
+gumdrop = "0.8.1"

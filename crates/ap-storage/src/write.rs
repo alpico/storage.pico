@@ -9,6 +9,7 @@ pub trait Write {
     fn discard(&self, offset: Offset, len: Offset) -> Result<Offset, Error>;
 }
 
+/// Trait extension to simplify writing.
 pub trait WriteExt {
     /// Write the whole buffer.
     fn write_exact(&self, offset: Offset, buf: &[u8]) -> Result<(), Error>;
@@ -18,7 +19,6 @@ pub trait WriteExt {
     fn discard_all(&self, offset: Offset, len: Offset) -> Result<(), Error>;
 }
 
-/// Trait extension to simplify writing.
 impl WriteExt for &dyn Write {
     /// Write the whole buffer.
     fn write_exact(&self, offset: Offset, buf: &[u8]) -> Result<(), Error> {

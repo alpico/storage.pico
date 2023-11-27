@@ -48,11 +48,11 @@ All crates in this repo, except for [`ap-storage-linux`](./creates/ap-storage-li
 
 We have examples of the implementation of tools using our storage interface.
 
-- [cat](./crates/ap-storage-linux/examples/cat.rs)
-- [du-parallel](./crates/ap-storage-linux/examples/du-parallel.rs)
-- [du](./crates/ap-storage-linux/examples/du.rs)
-- [find](./crates/ap-storage-linux/examples/find.rs)
-- [mkfs-vfat](./crates/ap-storage-linux/examples/mkfs-vfat.rs)
+- [cat](./crates/ap-storage-examples/src/bin/cat.rs)
+- [du-parallel](./crates/ap-storage-examples/src/bin/du-parallel.rs)
+- [du](./crates/ap-storage-examples/src/bin/du.rs)
+- [find](./crates/ap-storage-examples/src/bin/find.rs)
+- [mkfs-vfat](./crates/ap-storage-examples/src/bin/mkfs-vfat.rs)
 
 ## Roadmap
 

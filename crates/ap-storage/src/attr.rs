@@ -1,15 +1,4 @@
-//! Support for extended attributes.
-//!
-//! # Naming
-//!
-//! The attribute name-space is global.  To avoid conflicts we prefix
-//! the name with the crate it is defined in.
-//!
-//! # Types
-//!
-//! - there are signed and unsigned 64-bit values
-//! - there a
-//! - times are defined as nano-seconds since UNIX_EPOCH.
+//! Support for extended attributes in files.
 
 pub use ap_util_attr::{Attributes, Value, new_attr};
 
