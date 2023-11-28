@@ -25,6 +25,11 @@ impl Value {
         let Self::I64(x) = self else { return None };
         Some(*x)
     }
+    /// Get as a bool. Returns None if this is not one.
+    pub fn as_bool(&self) -> Option<bool> {
+        let Self::Bool(x) = self else { return None };
+        Some(*x)
+    }
     /// Get the length of a Raw value. Returns None if this is not one.
     pub fn as_len(&self) -> Option<usize> {
         let Self::Raw(x) = self else { return None };
