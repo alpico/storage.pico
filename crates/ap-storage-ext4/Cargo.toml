@@ -1,6 +1,8 @@
 [package]
 name = "ap-storage-ext4"
+description = "On-disk structures for Ext{2,3,4} filesystems."
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+homepage = "https://github.com/alpico/storage.pico"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

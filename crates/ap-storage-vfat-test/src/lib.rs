@@ -1,4 +1,4 @@
-//! End-to-end tests for VFAT crates.
+//! End-to-end tests for ap-storage-vfat-* crates.
 
 #[cfg(test)]
 mod tests {

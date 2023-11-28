@@ -1,4 +1,4 @@
-//! Unifiy all filesystems by wrapping them into an enum.
+//! Unify all ap-storage-* filesystems by wrapping them into an enum.
 
 #![no_std]
 // This is only wrapper code. So no docs required.

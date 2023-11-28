@@ -1,4 +1,4 @@
-//! Linux specific storage interface.
+//! Linux specific ap-storage implementations.
 
 use ap_storage::{Error, Offset, Read};
 use std::fs::File;

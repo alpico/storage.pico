@@ -1,4 +1,4 @@
-//! Support for attributes.
+//! Support for object attributes.
 //!
 //! There are various places in alpico where meta-data needs to be made publicly available.
 //! Examples are:

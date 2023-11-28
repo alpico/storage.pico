@@ -1,9 +1,10 @@
 [package]
 name = "ap-storage"
+description = "The alpico storage interfaces."
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+homepage = "https://github.com/alpico/storage.pico"
 
 [dependencies]
 ap-util-attr = { path = "../ap-util-attr" }

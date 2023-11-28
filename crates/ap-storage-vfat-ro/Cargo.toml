@@ -1,9 +1,11 @@
 [package]
 name = "ap-storage-vfat-ro"
+description = "Read-only access to a FAT disk."
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+homepage = "https://github.com/alpico/storage.pico"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 ap-storage={ path = "../ap-storage"}

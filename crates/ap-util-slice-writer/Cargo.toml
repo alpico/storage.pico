@@ -1,8 +1,9 @@
 [package]
 name = "ap-util-slice-writer"
+description = "Write into a slice of bytes while truncating on overflow."
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+homepage = "https://github.com/alpico/storage.pico"
 
 [dependencies]

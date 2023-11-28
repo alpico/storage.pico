@@ -1,4 +1,4 @@
-//! Date and time handling.
+//! Minimal date and time handling.
 
 #![no_std]
 

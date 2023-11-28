@@ -1,4 +1,4 @@
-//! Make a vfat filesystem.
+//! Make a FAT filesystem.
 #![no_std]
 
 use ap_storage::{Error, Write, WriteExt};
