@@ -9,4 +9,4 @@ homepage = "https://github.com/alpico/storage.pico"
 [dependencies]
 anyhow = { version = "1.0.75" }
 ap-storage = { path="../ap-storage" }
-libc = "0.2.149"
+libc = { version = "0.2.149", default-features = false }

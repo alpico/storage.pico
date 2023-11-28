@@ -1,41 +1,33 @@
 //! Linux specific ap-storage implementations.
 
-use ap_storage::{Error, Offset, Read};
-use std::fs::File;
-use std::os::fd::AsRawFd;
+#![no_std]
 
+use core::ffi::CStr;
+mod disk_ro;
 mod disk_rw;
+pub use disk_ro::LinuxDiskRO;
 pub use disk_rw::LinuxDiskRW;
 
-/// A disk backed by a file in Linux.
-pub struct LinuxDisk {
-    file: File,
-    offset: u64,
+/// Convert an libc error into a Result.
+///
+/// # Safety
+/// - the underlying function is unsafe
+pub unsafe fn check_error(res: isize) -> Result<isize, i32> {
+    if res != -1 {
+        return Ok(res);
+    }
+    Err(*libc::__errno_location())
 }
 
-impl LinuxDisk {
-    /// Open a read-only disk at the given offset.
-    pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
-        Ok(Self {
-            file: File::open(filename)?,
-            offset,
-        })
+/// Convert the input string into an CStr with a trailing nul.
+///
+/// The buffer is used as backing store and must be large enough.
+pub fn str2cstr<'a>(input: &str, buf: &'a mut [u8]) -> Option<&'a CStr> {
+    let src = input.as_bytes();
+    if buf.len() <= src.len() {
+        return None;
     }
-}
-
-impl Read for LinuxDisk {
-    fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
-        let res = unsafe {
-            libc::pread(
-                self.file.as_raw_fd(),
-                buf.as_mut_ptr() as *mut libc::c_void,
-                buf.len(),
-                (self.offset + offset) as i64,
-            )
-        };
-        if res == -1 {
-            return Err(std::io::Error::last_os_error().into());
-        }
-        Ok(res as usize)
-    }
+    buf[..src.len()].copy_from_slice(src);
+    buf[src.len()] = 0;
+    CStr::from_bytes_until_nul(buf).ok()
 }

@@ -1,15 +1,19 @@
 use super::*;
-use ap_storage::Write;
+use ap_storage::{Error, Offset, Read, Write};
 
 /// A writeable Linux disk.
-pub struct LinuxDiskRW(LinuxDisk);
+pub struct LinuxDiskRW(LinuxDiskRO);
 impl LinuxDiskRW {
     /// Use a file at a certain offset as a Linux disk.
     pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
-        Ok(Self(LinuxDisk {
-            file: File::options().read(true).write(true).open(filename)?,
-            offset,
-        }))
+        let mut buf = [0u8; libc::PATH_MAX as usize];
+        let filename = str2cstr(filename, &mut buf).ok_or(Error::msg("invalid filename"))?;
+        let fd = unsafe {
+            check_error(libc::open(filename.as_ptr(), libc::O_RDWR) as isize)
+                .map_err(|e| Error::msg("could not open file").context(e))? as i32
+        };
+
+        Ok(Self(LinuxDiskRO { fd, offset }))
     }
 }
 
@@ -22,31 +26,27 @@ impl Read for LinuxDiskRW {
 impl Write for LinuxDiskRW {
     fn write_bytes(&self, offset: Offset, buf: &[u8]) -> Result<usize, Error> {
         let res = unsafe {
-            libc::pwrite(
-                self.0.file.as_raw_fd(),
+            check_error(libc::pwrite(
+                self.0.fd,
                 buf.as_ptr() as *const libc::c_void,
                 buf.len(),
                 (self.0.offset + offset) as i64,
-            )
+            ))
+            .map_err(|e| Error::msg("pwrite failed").context(e))?
         };
-        if res == -1 {
-            return Err(std::io::Error::last_os_error().into());
-        }
         Ok(res as usize)
     }
 
     fn discard(&self, offset: Offset, len: Offset) -> Result<Offset, Error> {
-        let res = unsafe {
-            libc::fallocate(
-                self.0.file.as_raw_fd(),
+        let len = unsafe {
+            check_error(libc::fallocate(
+                self.0.fd,
                 libc::FALLOC_FL_PUNCH_HOLE | libc::FALLOC_FL_KEEP_SIZE,
                 offset as i64,
                 len as i64,
-            )
+            ) as isize)
+            .map_err(|e| Error::msg("fallocate failed").context(e))?
         };
-        if res == -1 {
-            return Err(std::io::Error::last_os_error().into());
-        }
-        Ok(len)
+        Ok(len as u64)
     }
 }

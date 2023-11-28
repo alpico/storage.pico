@@ -28,7 +28,7 @@ own crates.
 
 ## Portability
 
-All crates in this repo, except for [`ap-storage-linux`](./creates/ap-storage-linux), are `#![no_std]` compatible.
+All crates in this repo, except for the examples in [`ap-storage-examples`](./creates/ap-storage-examples), are `#![no_std]` compatible.
 
 ## Supported Filesystems
 

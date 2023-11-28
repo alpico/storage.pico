@@ -8,7 +8,7 @@ use ap_storage::{
     file::FileType,
     Error, FileSystem, Read,
 };
-use ap_storage_linux::LinuxDisk;
+use ap_storage_linux::LinuxDiskRO;
 use ap_storage_memory::ReadSlice;
 use gumdrop::Options;
 
@@ -58,7 +58,7 @@ fn visit(dir: &impl File) -> Result<(usize, u64), Error> {
 
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
-    let disk_pread = LinuxDisk::new("/dev/stdin", 0)?;
+    let disk_pread = LinuxDiskRO::new("/dev/stdin", 0)?;
     let mmap = Mmap::new("/dev/stdin", !opts.no_direct, 0, 0)?;
     let disk_mmap = ReadSlice(mmap.0);
     let disk: &dyn Read = if opts.pread { &disk_pread } else { &disk_mmap };
