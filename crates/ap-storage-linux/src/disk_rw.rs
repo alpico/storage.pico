@@ -38,15 +38,15 @@ impl Write for LinuxDiskRW {
     }
 
     fn discard(&self, offset: Offset, len: Offset) -> Result<Offset, Error> {
-        let len = unsafe {
+        unsafe {
             check_error(libc::fallocate(
                 self.0.fd,
                 libc::FALLOC_FL_PUNCH_HOLE | libc::FALLOC_FL_KEEP_SIZE,
-                offset as i64,
+                (self.0.offset + offset) as i64,
                 len as i64,
             ) as isize)
             .map_err(|e| Error::msg("fallocate failed").context(e))?
         };
-        Ok(len as u64)
+        Ok(len)
     }
 }

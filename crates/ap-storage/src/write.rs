@@ -25,7 +25,7 @@ impl WriteExt for &dyn Write {
         let mut done = 0;
         while done != buf.len() {
             match self.write_bytes(offset + done as Offset, &buf[done..])? {
-                0 => return Err(Error::msg(PartialWriteError)),
+                0 => return Err(Error::msg(PartialWriteError).context(line!()).context(file!())),
                 n => done += n,
             }
         }
@@ -43,7 +43,7 @@ impl WriteExt for &dyn Write {
         let end = offset + len;
         while offset < len {
             match self.discard(offset, end - offset)? {
-                0 => return Err(Error::msg(PartialWriteError)),
+                0 => return Err(Error::msg(PartialWriteError).context(line!()).context(file!())),
                 n => offset += n,
             }
         }
