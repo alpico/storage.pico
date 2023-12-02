@@ -1,6 +1,6 @@
 //! Output a file.
 
-use ap_storage::{file::File, Error, FileSystem, Read};
+use ap_storage::{file::File, Error, FileSystem, Read, msg2err};
 use ap_storage_linux::LinuxDiskRO;
 use gumdrop::Options;
 use std::io::Write;
@@ -47,7 +47,7 @@ impl core::str::FromStr for MaxSize {
 fn main() -> Result<(), Error> {
     let opts = CommandOptions::parse_args_default_or_exit();
     let disk = LinuxDiskRO::new("/dev/stdin", opts.offset)?;
-    let fs = ap_storage_unified::UnifiedFs::new(&disk).ok_or(Error::msg("no filesystem found"))?;
+    let fs = ap_storage_unified::UnifiedFs::new(&disk).ok_or(msg2err!("no filesystem found"))?;
     let start = &opts.start;
     let file = fs.root()?.lookup_path(start.as_bytes())?;
 

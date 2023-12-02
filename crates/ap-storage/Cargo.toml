@@ -8,6 +8,6 @@ homepage = "https://github.com/alpico/storage.pico"
 
 [dependencies]
 ap-util-attr = { path = "../ap-util-attr" }
-anyhow = { version = "1.0.75", default-features = false }
+anyhow = { version = "1", default-features = false }
 
 

@@ -5,6 +5,7 @@ use ap_storage::{
     directory::{DirEntry, DirIterator},
     file::{File, FileType},
     Error, ReadExt,
+    msg2err,
 };
 use ap_util_slice_writer::*;
 
@@ -27,7 +28,7 @@ impl DirIterator for PartitionDir<'_> {
 
         let partition: Partition = self.file.disk.read_object(self.file.offset + 0x1be + self.pos * 0x10)?;
         let mut writer = SliceWriter(name, 0);
-        core::write!(&mut writer, "part-{}", self.pos).map_err(Error::msg)?;
+        core::write!(&mut writer, "part-{}", self.pos).map_err(|e|msg2err!(e))?;
 
         let typ = if partition.typ == 0 || partition.size == 0 || writer.1 == 0 {
             FileType::Unknown

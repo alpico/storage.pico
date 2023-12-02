@@ -3,7 +3,7 @@
 //! - first example of a pseudo-filesystem
 //! - usefull for small in-memory data
 
-use ap_storage::{directory, file::File, file::FileType, Error, FileSystem, Offset, Read};
+use ap_storage::{directory, file::File, file::FileType, Error, FileSystem, Offset, Read, msg2err};
 
 mod attr;
 mod dir;
@@ -27,7 +27,7 @@ impl JsonFS {
             ofs += n;
             if let Err(e) = serde_json::from_slice::<serde_json::Value>(&data[..]) {
                 if !e.is_eof() {
-                    return Err(Error::msg("invalid JSON"));
+                    return Err(msg2err!("invalid JSON"));
                 }
             }
             data.resize(ofs + 4096, 0);
@@ -35,9 +35,9 @@ impl JsonFS {
         data.resize(ofs, 0);
 
         // convert to a Value
-        let root: serde_json::Value = serde_json::from_slice(&data).map_err(Error::msg)?;
+        let root: serde_json::Value = serde_json::from_slice(&data).map_err(|e| msg2err!(e))?;
         if !root.is_object() {
-            return Err(Error::msg("not an object"));
+            return Err(msg2err!("not an object"));
         }
         Ok(Self { root })
     }

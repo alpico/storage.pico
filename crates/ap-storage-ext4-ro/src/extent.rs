@@ -1,11 +1,12 @@
 use crate::file::Ext4File;
-use ap_storage::Error;
+use ap_storage::{Error, msg2err}
+;
 pub struct Ext4Extents<'a>(pub &'a Ext4File<'a>);
 
 #[cfg(not(feature = "file_extents"))]
 impl<'a> Ext4Extents<'a> {
     pub fn search(&self, _block: u64) -> Result<(u64, u64), Error> {
-        Err(Error::msg("extents not supported"))
+        Err(msg2err!("extents not supported"))
     }
 }
 #[cfg(feature = "file_extents")]
@@ -54,10 +55,10 @@ impl<'a> Ext4Extents<'a> {
         loop {
             let header: Ext4ExtentHeader = self.get(ofs)?;
             if header.magic != 0xf30a {
-                return Err(Error::msg("extent magic"));
+                return Err(msg2err!("extent magic"));
             }
             if ofs != 0 && depth != header.depth + 1 {
-                return Err(Error::msg("extent depth"));
+                return Err(msg2err!("extent depth"));
             }
             if header.depth == 0 {
                 ofs = self.search_binary(block, ofs + 12, header.entries as usize)?;

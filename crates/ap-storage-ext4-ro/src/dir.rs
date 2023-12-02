@@ -1,5 +1,5 @@
 //! Directory iterator.
-use super::{Error, FileType, Read, ReadExt};
+use super::{Error, FileType, Read, ReadExt, msg2err};
 use ap_storage::directory::{DirEntry, DirIterator};
 use ap_storage_ext4::dir::DirEntryHeader;
 
@@ -30,7 +30,7 @@ impl<'a> DirIterator for Dir<'a> {
         if nlen > 0 {
             let n = self.parent.read_bytes(self.offset + O as u64, &mut name[..nlen])?;
             if n < nlen {
-                return Err(Error::msg("truncated dir"));
+                return Err(msg2err!("truncated dir"));
             }
         }
         let offset = self.offset;

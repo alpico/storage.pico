@@ -1,5 +1,5 @@
 use super::*;
-use ap_storage::{Error, Offset, Read, Write};
+use ap_storage::{Error, Offset, Read, Write, msg2err};
 
 /// A writeable Linux disk.
 pub struct LinuxDiskRW(LinuxDiskRO);
@@ -7,10 +7,10 @@ impl LinuxDiskRW {
     /// Use a file at a certain offset as a Linux disk.
     pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
         let mut buf = [0u8; libc::PATH_MAX as usize];
-        let filename = str2cstr(filename, &mut buf).ok_or(Error::msg("invalid filename"))?;
+        let filename = str2cstr(filename, &mut buf).ok_or(msg2err!("invalid filename"))?;
         let fd = unsafe {
             check_error(libc::open(filename.as_ptr(), libc::O_RDWR) as isize)
-                .map_err(|e| Error::msg("could not open file").context(e))? as i32
+                .map_err(|e| msg2err!("could not open file").context(e))? as i32
         };
 
         Ok(Self(LinuxDiskRO { fd, offset }))
@@ -31,8 +31,7 @@ impl Write for LinuxDiskRW {
                 buf.as_ptr() as *const libc::c_void,
                 buf.len(),
                 (self.0.offset + offset) as i64,
-            ))
-            .map_err(|e| Error::msg("pwrite failed").context(e))?
+            )).map_err(|e| msg2err!("pwrite").context(e))? as i32
         };
         Ok(res as usize)
     }
@@ -44,8 +43,7 @@ impl Write for LinuxDiskRW {
                 libc::FALLOC_FL_PUNCH_HOLE | libc::FALLOC_FL_KEEP_SIZE,
                 (self.0.offset + offset) as i64,
                 len as i64,
-            ) as isize)
-            .map_err(|e| Error::msg("fallocate failed").context(e))?
+            ) as isize).map_err(|e| msg2err!("discard").context(e))? as i32
         };
         Ok(len)
     }

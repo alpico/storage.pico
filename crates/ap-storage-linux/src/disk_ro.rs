@@ -1,5 +1,5 @@
 use super::*;
-use ap_storage::{Error, Offset, Read};
+use ap_storage::{Error, Offset, Read, msg2err};
 
 /// A disk backed by a file in Linux.
 pub struct LinuxDiskRO {
@@ -11,10 +11,10 @@ impl LinuxDiskRO {
     /// Open a read-only disk at the given offset.
     pub fn new(filename: &str, offset: u64) -> Result<Self, Error> {
         let mut buf = [0u8; libc::PATH_MAX as usize];
-        let filename = str2cstr(filename, &mut buf).ok_or(Error::msg("invalid filename"))?;
+        let filename = str2cstr(filename, &mut buf).ok_or(msg2err!("invalid filename"))?;
         let fd = unsafe {
             check_error(libc::open(filename.as_ptr(), libc::O_RDONLY) as isize)
-                .map_err(|e| Error::msg("could not open file").context(e))? as i32
+                .map_err(|e| msg2err!("open").context(e))? as i32
         };
         Ok(Self { fd, offset })
     }
@@ -29,7 +29,7 @@ impl Read for LinuxDiskRO {
                 buf.len(),
                 (self.offset + offset) as i64,
             ))
-            .map_err(|e| Error::msg("could not open file").context(e))?
+            .map_err(|e| msg2err!("pread").context(e))?
         };
         Ok(res as usize)
     }

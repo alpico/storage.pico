@@ -1,7 +1,7 @@
 //! File in VFAT
 
 use super::{attr::Attr, dir::Dir, DirectoryEntry, VFatFS};
-use ap_storage::{file::FileType, Error, Offset, Read, ReadExt};
+use ap_storage::{file::FileType, Error, Offset, Read, ReadExt, msg2err};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]
@@ -82,7 +82,7 @@ impl<'a> ap_storage::file::File for File<'a> {
 
     fn open(&self, mut offset: Offset) -> Result<Self, Error> {
         if !self.inode.is_dir() {
-            return Err(Error::msg("not a directory"));
+            return Err(msg2err!("not a directory"));
         }
         if self.is_root() {
             if offset < 2 {

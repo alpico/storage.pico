@@ -1,6 +1,6 @@
 //! File support.
 
-use super::{attr, Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
+use super::{attr, Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt, msg2err};
 use ap_storage::file::File;
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;
@@ -85,7 +85,7 @@ impl<'a> File for Ext4File<'a> {
         Self: Sized,
     {
         if self.ftype() != FileType::Directory {
-            return Err(Error::msg("not a directory"));
+            return Err(msg2err!("not a directory"));
         }
         let header: DirEntryHeader = (self as &dyn Read).read_object(offset)?;
         Self::new(self.fs, header.inode())

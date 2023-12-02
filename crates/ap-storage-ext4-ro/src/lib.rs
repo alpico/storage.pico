@@ -15,7 +15,7 @@ pub mod file;
 
 use dir::Dir;
 
-use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt};
+use ap_storage::{file::FileType, Error, FileSystem, Offset, Read, ReadExt, msg2err};
 use ap_storage_ext4::{inode::Inode, superblock::SuperBlock};
 
 /// Read-only Ext{2,3,4} file-system object.
@@ -33,13 +33,13 @@ impl<'a> Ext4Fs<'a> {
 
         // check the magic
         if sb.magic != 0xef53 {
-            return Err(Error::msg("not an ext2,3,4 filesystem"));
+            return Err(msg2err!("not an ext2,3,4 filesystem"));
         }
 
         // support FILETYPE, META_BG, EXTENTS, 64BIT and ignore RECOVER, JOURNAL_DEV, FLEX_BG
         let feature_incompat = if cfg!(feature = "file_extents") { 0xd2 } else { 0x92 };
         if sb.feature_incompat & !(feature_incompat | 0x20c) != 0 {
-            return Err(Error::msg("incompatible features"));
+            return Err(msg2err!("incompatible features"));
         }
         Ok(Self {
             disk,
@@ -51,7 +51,7 @@ impl<'a> Ext4Fs<'a> {
     /// Read an inode.
     pub fn inode(&self, nr: u64) -> Result<Inode, Error> {
         if nr > self.sb.inode_count as u64 {
-            return Err(Error::msg("no such inode"));
+            return Err(msg2err!("no such inode"));
         }
 
         // inode numbers start at one

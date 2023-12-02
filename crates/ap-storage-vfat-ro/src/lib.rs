@@ -9,7 +9,7 @@
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
-use ap_storage::{Error, FileSystem, Offset, Read, ReadExt};
+use ap_storage::{Error, FileSystem, Offset, Read, ReadExt, msg2err};
 use ap_storage_vfat::*;
 
 mod attr;
@@ -75,22 +75,22 @@ impl<'a> VFatFS<'a> {
 
         // validate the super-block
         if buf[511] != 0xaa || buf[510] != 0x55 {
-            return Err(Error::msg("boot signature"));
+            return Err(msg2err!("boot signature"));
         }
         if bpb.bytes_per_sector < 128 || !bpb.bytes_per_sector.is_power_of_two() {
-            return Err(Error::msg("bytes per sector"));
+            return Err(msg2err!("bytes per sector"));
         }
         if bpb.sectors_per_cluster == 0 || !bpb.sectors_per_cluster.is_power_of_two() {
-            return Err(Error::msg("bytes per cluster"));
+            return Err(msg2err!("bytes per cluster"));
         }
         if bpb.reserved_sectors == 0 {
-            return Err(Error::msg("reserved sectors"));
+            return Err(msg2err!("reserved sectors"));
         }
         if bpb.num_fats == 0 {
-            return Err(Error::msg("FAT count"));
+            return Err(msg2err!("FAT count"));
         }
         if bpb.media < 0xf8 && bpb.media != 0xf0 {
-            return Err(Error::msg("media byte"));
+            return Err(msg2err!("media byte"));
         }
 
         // select the 16-bit or 32-bit version of a field
@@ -144,7 +144,7 @@ impl<'a> VFatFS<'a> {
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
         if cluster == 0 || cluster > self.clusters + 2 {
-            return Err(Error::msg("eof"));
+            return Err(msg2err!("eof"));
         }
         let ofs = self.fat_start + cluster as Offset * self.variant as Offset / 8;
 

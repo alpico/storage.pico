@@ -1,7 +1,7 @@
 //! Make a FAT filesystem.
 #![no_std]
 
-use ap_storage::{Error, Write, WriteExt};
+use ap_storage::{Error, Write, WriteExt, check, msg2err};
 use ap_storage_vfat::{BiosParameterBlock, ExtBiosParameterBlock16, ExtBiosParameterBlock32, Variant};
 
 /// A VFAT builder.
@@ -72,7 +72,7 @@ impl MakeVFatFS {
     /// The size of the sector in bytes. Must be a power of two and at least 128.
     pub fn sector_size(&mut self, v: u16) -> Result<Self, Error> {
         if !v.is_power_of_two() || v < 128 {
-            return Err(Error::msg("sector_size must be a power of two and at least 128"));
+            return Err(msg2err!("sector_size must be a power of two and at least 128"));
         }
         self.sector_size = v;
         Ok(*self)
@@ -81,7 +81,7 @@ impl MakeVFatFS {
     /// Sectors per cluster. A power of two larger than 0.
     pub fn per_cluster(&mut self, v: u8) -> Result<Self, Error> {
         if !v.is_power_of_two() || v == 0 {
-            return Err(Error::msg("per_clusters must be one of [1,2,4,8,16,32,64,128]"));
+            return Err(msg2err!("per_clusters must be one of [1,2,4,8,16,32,64,128]"));
         }
         self.per_cluster = v;
         Ok(*self)
@@ -173,7 +173,7 @@ impl MakeVFatFS {
         // for the FAT12 and FAT16 variants the root-sectors and the two reserved entries have to be accounted for
         let available_sectors = sectors - core::cmp::min(sectors, reserved_sectors + root_sectors);
         if available_sectors < per_cluster + num_fats {
-            return Err(Error::msg("not enough space"));
+            return Err(msg2err!("not enough space"));
         }
 
         // start with FAT12
@@ -197,7 +197,7 @@ impl MakeVFatFS {
         if cluster32 < 0xfff_fff6 {
             return Ok((Variant::Fat32, fat_size32));
         }
-        Err(Error::msg("disk to large"))
+        Err(msg2err!("disk to large"))
     }
 
     /// Return the sector number where the data area starts without alignment.
@@ -247,7 +247,7 @@ impl MakeVFatFS {
         // clear the Reserved, FAT and Root Directory area
         let root_sectors = (bpb.root_entries as u64 * 32).div_ceil(sector_size);
         let clear_sectors = bpb.reserved_sectors as u64 + fat_size * num_fats as u64 + root_sectors;
-        disk.discard_all(0, clear_sectors * sector_size)?;
+        check!(disk.discard_all(0, clear_sectors * sector_size));
 
         // write the parameter blocks
         disk.write_object(0, bpb)?;

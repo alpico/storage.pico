@@ -48,15 +48,15 @@ where
     where
         Self: Sized,
     {
-        let children = self.value.as_object().ok_or(Error::msg("not an object"))?;
-        let child = children.keys().nth(offset as usize).ok_or(Error::msg("eof"))?;
+        let children = self.value.as_object().ok_or(msg2err!("not an object"))?;
+        let child = children.keys().nth(offset as usize).ok_or(msg2err!("eof"))?;
         Ok(JsonFile::new(&children[child], child))
     }
 
     /// A more efficient lookup.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
-        let name = core::str::from_utf8(name).map_err(Error::msg)?;
-        let children = self.value.as_object().ok_or(Error::msg("not an object"))?;
+        let name = core::str::from_utf8(name).map_err(|e|msg2err!(e))?;
+        let children = self.value.as_object().ok_or(msg2err!("not an object"))?;
         let Some(value) = children.get(name) else {
             return Ok(None);
         };
@@ -66,7 +66,7 @@ where
 
 impl Read for JsonFile<'_> {
     fn read_bytes(&self, offset: Offset, buf: &mut [u8]) -> Result<usize, Error> {
-        let v = serde_json::to_string(self.value).map_err(Error::msg)?;
+        let v = serde_json::to_string(self.value).map_err(|e| msg2err!(e))?;
         let v = v.as_bytes();
         if offset >= v.len() as Offset {
             return Ok(0);

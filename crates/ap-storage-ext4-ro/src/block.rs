@@ -1,12 +1,12 @@
 use crate::file::Ext4File;
-use ap_storage::Error;
+use ap_storage::{Error};
 
 pub struct Ext4Blocks<'a>(pub &'a Ext4File<'a>);
 
 #[cfg(not(feature = "file_blocks"))]
 impl<'a> Ext4Blocks<'a> {
     pub fn search(&self, mut _block: u64) -> Result<(u64, u64), Error> {
-        Err(Error::msg("blocks not supported"))
+        Err(ap_storage::msg2err!("blocks not supported"))
     }
 }
 

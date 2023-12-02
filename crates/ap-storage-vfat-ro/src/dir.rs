@@ -120,7 +120,7 @@ impl<'a> DirIterator for Dir<'a> {
 
         // get the long-name if present
         let mut nlen = 0;
-        #[cfg(not(feature = "ignore-long-name"))]
+        #[cfg(feature = "long-name")]
         if !self.file.fs.options.ignore_long_name {
             nlen = self.handle_long_name(next_offset, name)
         };

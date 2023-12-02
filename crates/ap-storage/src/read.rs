@@ -1,5 +1,5 @@
 //! Traits for reading.
-use crate::{Error, Offset};
+use crate::{Error, Offset, msg2err};
 use core::mem::MaybeUninit;
 
 /// Read from a certain offset into a buffer.
@@ -25,7 +25,7 @@ impl ReadExt for &dyn Read {
         let mut n = 0;
         while n != buf.len() {
             match self.read_bytes(offset + n as Offset, &mut buf[n..])? {
-                0 => return Err(Error::msg(PartialReadError)),
+                0 => return Err(msg2err!(PartialReadError)),
                 c => n += c,
             }
         }
