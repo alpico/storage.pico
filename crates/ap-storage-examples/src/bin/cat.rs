@@ -1,6 +1,6 @@
 //! Output a file.
 
-use ap_storage::{file::File, Error, FileSystem, Read, msg2err};
+use ap_storage::{file::File, msg2err, Error, FileSystem, Read};
 use ap_storage_linux::LinuxDiskRO;
 use gumdrop::Options;
 use std::io::Write;

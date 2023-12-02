@@ -1,6 +1,6 @@
 //! Support for files.
 
-use crate::{attr::Attributes, directory::DirIterator, Error, Offset, msg2err};
+use crate::{attr::Attributes, directory::DirIterator, msg2err, Error, Offset};
 
 /// Generic file-types.
 #[derive(Debug, PartialEq, Eq)]

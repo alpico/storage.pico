@@ -9,7 +9,7 @@
 #![no_std]
 #![feature(byte_slice_trim_ascii)]
 
-use ap_storage::{Error, FileSystem, Offset, Read, ReadExt, msg2err};
+use ap_storage::{msg2err, Error, FileSystem, Offset, Read, ReadExt};
 use ap_storage_vfat::*;
 
 mod attr;

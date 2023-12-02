@@ -1,6 +1,6 @@
 //! File support.
 
-use super::{attr, Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt, msg2err};
+use super::{attr, msg2err, Dir, Error, Ext4Fs, FileType, Inode, Offset, Read, ReadExt};
 use ap_storage::file::File;
 use ap_storage_ext4::dir::DirEntryHeader;
 use core::cell::RefCell;

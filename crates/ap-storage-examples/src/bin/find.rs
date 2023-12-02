@@ -5,8 +5,7 @@ use ap_storage::{
     directory::DirIterator,
     file::File,
     file::FileType,
-    Error, FileSystem,
-    msg2err,
+    msg2err, Error, FileSystem,
 };
 use ap_storage_linux::LinuxDiskRO;
 use gumdrop::Options;

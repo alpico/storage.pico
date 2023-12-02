@@ -13,7 +13,7 @@
 //!
 //! # Assumptions
 //! -
-use ap_storage::{Error, Offset, Read, ReadExt, msg2err};
+use ap_storage::{msg2err, Error, Offset, Read, ReadExt};
 use ap_storage_linux::LinuxDiskRW;
 use ap_storage_vfat_mkfs::MakeVFatFS;
 use core::str::FromStr;

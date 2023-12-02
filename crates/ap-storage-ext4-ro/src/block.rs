@@ -1,5 +1,5 @@
 use crate::file::Ext4File;
-use ap_storage::{Error};
+use ap_storage::Error;
 
 pub struct Ext4Blocks<'a>(pub &'a Ext4File<'a>);
 

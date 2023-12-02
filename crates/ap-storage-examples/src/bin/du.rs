@@ -6,8 +6,7 @@ use ap_storage::{
     directory::DirIterator,
     file::File,
     file::FileType,
-    Error, FileSystem, Read,
-    msg2err,
+    msg2err, Error, FileSystem, Read,
 };
 use ap_storage_linux::LinuxDiskRO;
 use ap_storage_memory::ReadSlice;

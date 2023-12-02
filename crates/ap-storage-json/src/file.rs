@@ -55,7 +55,7 @@ where
 
     /// A more efficient lookup.
     fn lookup(&self, name: &[u8]) -> Result<Option<Self>, Error> {
-        let name = core::str::from_utf8(name).map_err(|e|msg2err!(e))?;
+        let name = core::str::from_utf8(name).map_err(|e| msg2err!(e))?;
         let children = self.value.as_object().ok_or(msg2err!("not an object"))?;
         let Some(value) = children.get(name) else {
             return Ok(None);

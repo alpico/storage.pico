@@ -27,21 +27,23 @@ pub trait FileSystem<'a> {
 /// Check for errors including the location as context.
 #[macro_export]
 macro_rules! check {
-    ($v: expr) => { $v.map_err(|e| e.context($crate::ErrorCtx((file!(), line!()))))? }
+    ($v: expr) => {
+        $v.map_err(|e| e.context($crate::ErrorCtx((file!(), line!()))))?
+    };
 }
-
-
 
 /// Convert into an error type including the context.
 #[macro_export]
 macro_rules! msg2err {
-    ($v: expr) => { Error::msg($v).context($crate::ErrorCtx((file!(), line!()))) }
+    ($v: expr) => {
+        Error::msg($v).context($crate::ErrorCtx((file!(), line!())))
+    };
 }
 
 /// A container for file! and line! Error context
 pub struct ErrorCtx(pub (&'static str, u32));
 impl core::fmt::Display for ErrorCtx {
     fn fmt(&self, fmt: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(fmt, "{}:{}", self.0.0, self.0.1)
+        write!(fmt, "{}:{}", self.0 .0, self.0 .1)
     }
 }

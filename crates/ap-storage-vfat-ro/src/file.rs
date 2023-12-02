@@ -1,7 +1,7 @@
 //! File in VFAT
 
 use super::{attr::Attr, dir::Dir, DirectoryEntry, VFatFS};
-use ap_storage::{file::FileType, Error, Offset, Read, ReadExt, msg2err};
+use ap_storage::{file::FileType, msg2err, Error, Offset, Read, ReadExt};
 use core::cell::RefCell;
 
 #[derive(Debug, Clone)]

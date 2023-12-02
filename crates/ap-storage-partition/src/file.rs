@@ -1,7 +1,7 @@
 //! File implementation for partitions.
 
 use crate::{attr::Attr, dir::PartitionDir, Partition};
-use ap_storage::{file::File, file::FileType, Error, Offset, Read, ReadExt, msg2err};
+use ap_storage::{file::File, file::FileType, msg2err, Error, Offset, Read, ReadExt};
 
 pub struct PartitionFile<'a> {
     pub(crate) disk: &'a dyn Read,

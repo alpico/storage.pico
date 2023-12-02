@@ -1,7 +1,7 @@
 //! MBR Partition support.
 #![no_std]
 
-use ap_storage::{Error, FileSystem, Read, ReadExt, msg2err};
+use ap_storage::{msg2err, Error, FileSystem, Read, ReadExt};
 mod attr;
 mod dir;
 mod file;

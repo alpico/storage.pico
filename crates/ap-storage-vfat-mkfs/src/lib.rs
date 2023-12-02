@@ -1,7 +1,7 @@
 //! Make a FAT filesystem.
 #![no_std]
 
-use ap_storage::{Error, Write, WriteExt, check, msg2err};
+use ap_storage::{check, msg2err, Error, Write, WriteExt};
 use ap_storage_vfat::{BiosParameterBlock, ExtBiosParameterBlock16, ExtBiosParameterBlock32, Variant};
 
 /// A VFAT builder.

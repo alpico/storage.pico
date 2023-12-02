@@ -1,5 +1,5 @@
 //! Traits for writing.
-use crate::{Error, Offset, msg2err};
+use crate::{msg2err, Error, Offset};
 
 /// Write to a file or disk at a certain offset.
 pub trait Write {

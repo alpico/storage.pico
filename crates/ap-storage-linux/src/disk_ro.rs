@@ -1,5 +1,5 @@
 use super::*;
-use ap_storage::{Error, Offset, Read, msg2err};
+use ap_storage::{msg2err, Error, Offset, Read};
 
 /// A disk backed by a file in Linux.
 pub struct LinuxDiskRO {

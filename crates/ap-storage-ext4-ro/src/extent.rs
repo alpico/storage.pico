@@ -1,6 +1,5 @@
 use crate::file::Ext4File;
-use ap_storage::{Error, msg2err}
-;
+use ap_storage::{msg2err, Error};
 pub struct Ext4Extents<'a>(pub &'a Ext4File<'a>);
 
 #[cfg(not(feature = "file_extents"))]

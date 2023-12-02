@@ -1,5 +1,5 @@
 use super::*;
-use ap_storage::{Error, Offset, Read, Write, msg2err};
+use ap_storage::{msg2err, Error, Offset, Read, Write};
 
 /// A writeable Linux disk.
 pub struct LinuxDiskRW(LinuxDiskRO);
@@ -31,7 +31,8 @@ impl Write for LinuxDiskRW {
                 buf.as_ptr() as *const libc::c_void,
                 buf.len(),
                 (self.0.offset + offset) as i64,
-            )).map_err(|e| msg2err!("pwrite").context(e))? as i32
+            ))
+            .map_err(|e| msg2err!("pwrite").context(e))? as i32
         };
         Ok(res as usize)
     }
@@ -43,7 +44,8 @@ impl Write for LinuxDiskRW {
                 libc::FALLOC_FL_PUNCH_HOLE | libc::FALLOC_FL_KEEP_SIZE,
                 (self.0.offset + offset) as i64,
                 len as i64,
-            ) as isize).map_err(|e| msg2err!("discard").context(e))? as i32
+            ) as isize)
+            .map_err(|e| msg2err!("discard").context(e))? as i32
         };
         Ok(len)
     }

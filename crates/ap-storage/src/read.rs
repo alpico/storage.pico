@@ -1,5 +1,5 @@
 //! Traits for reading.
-use crate::{Error, Offset, msg2err};
+use crate::{msg2err, Error, Offset};
 use core::mem::MaybeUninit;
 
 /// Read from a certain offset into a buffer.

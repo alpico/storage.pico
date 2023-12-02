@@ -1,5 +1,5 @@
 //! Directory iterator.
-use super::{Error, FileType, Read, ReadExt, msg2err};
+use super::{msg2err, Error, FileType, Read, ReadExt};
 use ap_storage::directory::{DirEntry, DirIterator};
 use ap_storage_ext4::dir::DirEntryHeader;
 
