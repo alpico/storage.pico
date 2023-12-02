@@ -14,5 +14,6 @@ ap-storage-ext4-ro = { path="../ap-storage-ext4-ro" }
 ap-storage-linux = { path="../ap-storage-linux" }
 ap-storage-memory = { path="../ap-storage-memory" }
 ap-storage-unified = { path="../ap-storage-unified" }
+ap-storage-vfat = { path="../ap-storage-vfat" }
 ap-storage-vfat-mkfs = { path="../ap-storage-vfat-mkfs" }
 gumdrop = "0.8.1"
