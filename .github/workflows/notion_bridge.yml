@@ -1,0 +1,17 @@
+name: Run Script
+
+on: [issues, issue_comment]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alpico/github-notion-bridge@main
+        with:
+          gh_token: ${{ secrets.GH_TOKEN }}
+          notion_api_key: ${{ secrets.NOTION_API_KEY }}
+          notion_page_id: "83fbbd2006ec436fa76579837e795bab"
+          gh_notion_user_map: '{"vmmon":"2be252ea-83d1-418e-b4fb-ce130654bf63", "tpotie": "1f8bdbea-1aca-48f8-9801-7937c1ab7e4c", "aDogCalledSpot":"30486824-964a-49ae-a41b-a4640bcf8721", "s1lken":"341ec851-6b7d-4c51-a3fd-5749dde48c4a"}'
+          board_column_prop_name: "Status"
+          relation_prop_name: "Project"
+          related_page: "d3da9e0533c94f78abfb81616c44b063"
