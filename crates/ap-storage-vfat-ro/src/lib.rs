@@ -143,7 +143,7 @@ impl<'a> VFatFS<'a> {
 
     /// Follow the fat one entry at a time.
     fn follow_fat(&self, cluster: u32) -> Result<u32, Error> {
-        if cluster == 0 || cluster > self.clusters + 2 {
+        if cluster == 0 || cluster >= self.clusters + 2 {
             return Err(msg2err!("eof"));
         }
         let ofs = self.fat_start + cluster as Offset * self.variant as Offset / 8;
